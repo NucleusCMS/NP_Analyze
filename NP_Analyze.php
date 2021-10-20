@@ -19,7 +19,7 @@ class NP_Analyze extends NucleusPlugin
 
     function getURL()
     {
-        return "http://nucleus.mz-style.com/";
+        return "https://github.com/NucleusCMS/NP_Analyze";
     }
 
     function getVersion()
