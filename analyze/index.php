@@ -201,7 +201,7 @@
 				if($j == $row['time']) {
 					$img_count = '';
 					$img_c = $oPluginAdmin->plugin->getOption('alz_img_c');
-					if($row['count'] > 10 && $img_c) $img_count = "<img src=\"".$CONF['PluginURL']."analyze/blue.png\" alt=\"point\" width=\"10\" height=\"".(round($row['count']/10, 0)*$img_c)."\"><br />\n";
+					if($row['count'] > 10 && $img_c) $img_count = "<img src=\"".$CONF['PluginURL']."analyze/blue.jpg\" alt=\"point\" width=\"10\" height=\"".(round($row['count']/10, 0)*$img_c)."\"><br />\n";
 					$t_t .= "<td style=\"text-align: right; vertical-align: bottom;\">".$img_count."<a href=\"".$sslink."b&amp;sort=ASC&amp;fie=aldate&amp;query=".$t_month."&#32;".$row['time']."\" title=\""._NP_ANALYZE_TIME2."\">".$row['count']."</a></td>\n";
 					$t++;
 					break;
@@ -1031,8 +1031,8 @@ AnalyzeMainGroup($hit_range ,$past, $this_month, $top_limit, 7, $sslink, $temp_j
 			case ($date_j == 10 && $past) :
 				$ii++;
 				$result_1 .= "<th>".substr($row['ahdate'], 8, 2)."</th>";
-				$result_2 .= "<td style=\"vertical-align: bottom;\"><img src=\"".$CONF['PluginURL']."analyze/blue.png\" alt=\"point\" title=\"".number_format($ahvi)."\" width=\"12\" height=\"".(round($ahvi/20, 0)*$img_c)."\"></td>";
-				$result_3 .= "<td style=\"vertical-align: bottom;\"><img src=\"".$CONF['PluginURL']."analyze/pink.png\" alt=\"point\" title=\"".$havg."\" width=\"12\" height=\"".round($havg*10, 0)."\"></td>";
+				$result_2 .= "<td style=\"vertical-align: bottom;\"><img src=\"".$CONF['PluginURL']."analyze/blue.jpg\" alt=\"point\" title=\"".number_format($ahvi)."\" width=\"12\" height=\"".(round($ahvi/20, 0)*$img_c)."\"></td>";
+				$result_3 .= "<td style=\"vertical-align: bottom;\"><img src=\"".$CONF['PluginURL']."analyze/pink.jpg\" alt=\"point\" title=\"".$havg."\" width=\"12\" height=\"".round($havg*10, 0)."\"></td>";
 				$ahvi1 = $ahvi1+$ahvi;
 				$havg1 = $havg1+$havg;
 				break;
@@ -1044,13 +1044,13 @@ AnalyzeMainGroup($hit_range ,$past, $this_month, $top_limit, 7, $sslink, $temp_j
 '.$t_d.'">'.number_format($robo_c).'</td>
 '.$t_d.'">'.$havg.'</td>
 <td>
-<img src="'.$CONF['PluginURL'].'analyze/blue.png" alt="point" title="P.'.$hit01.' ('.$ahlevel1.'%)" height="10" width="'.$ahlevel1.'"><img src="'.$CONF['PluginURL'].'analyze/green.png" alt="point" title="P.'.($hit_range[0]+1).'-'.$hit_range[1].' ('.$ahlevel2.'%)" height="10" width="'.$ahlevel2.'"><img src="'.$CONF['PluginURL'].'analyze/pink.png" alt="point" title="P.'.($hit_range[1]+1).'-'.$hit_range[2].' ('.$ahlevel3.'%)" height="10" width="'.$ahlevel3.'"><img src="'.$CONF['PluginURL'].'analyze/l_blue.png" alt="point" title="P.'.($hit_range[2]+1).'-'.$hit_range[3].' ('.$ahlevel4.'%)" height="10" width="'.$ahlevel4.'"><img src="'.$CONF['PluginURL'].'analyze/red.png" alt="point" title="P.'.($hit_range[3]+1).'-'.$hit_range[4].' ('.$ahlevel5.'%)" height="10" width="'.$ahlevel5.'">
+<img src="'.$CONF['PluginURL'].'analyze/blue.jpg" alt="point" title="P.'.$hit01.' ('.$ahlevel1.'%)" height="10" width="'.$ahlevel1.'"><img src="'.$CONF['PluginURL'].'analyze/green.jpg" alt="point" title="P.'.($hit_range[0]+1).'-'.$hit_range[1].' ('.$ahlevel2.'%)" height="10" width="'.$ahlevel2.'"><img src="'.$CONF['PluginURL'].'analyze/pink.jpg" alt="point" title="P.'.($hit_range[1]+1).'-'.$hit_range[2].' ('.$ahlevel3.'%)" height="10" width="'.$ahlevel3.'"><img src="'.$CONF['PluginURL'].'analyze/l_blue.jpg" alt="point" title="P.'.($hit_range[2]+1).'-'.$hit_range[3].' ('.$ahlevel4.'%)" height="10" width="'.$ahlevel4.'"><img src="'.$CONF['PluginURL'].'analyze/red.jpg" alt="point" title="P.'.($hit_range[3]+1).'-'.$hit_range[4].' ('.$ahlevel5.'%)" height="10" width="'.$ahlevel5.'">
 </td>
-'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/blue.png) bottom no-repeat;">'.number_format($ahle1).$s_d.$ahlevel1.'%)</span></td>
-'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/green.png) bottom no-repeat;">'.number_format($ahle2).$s_d.$ahlevel2.'%)</span></td>
-'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/pink.png) bottom no-repeat;">'.number_format($ahle3).$s_d.$ahlevel3.'%)</span></td>
-'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/l_blue.png) bottom no-repeat;">'.number_format($ahle4).$s_d.$ahlevel4.'%)</span></td>
-'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/red.png) bottom no-repeat;">'.number_format($ahle5).$s_d.$ahlevel5.'%)</span></td>
+'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/blue.jpg) bottom no-repeat;">'.number_format($ahle1).$s_d.$ahlevel1.'%)</span></td>
+'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/green.jpg) bottom no-repeat;">'.number_format($ahle2).$s_d.$ahlevel2.'%)</span></td>
+'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/pink.jpg) bottom no-repeat;">'.number_format($ahle3).$s_d.$ahlevel3.'%)</span></td>
+'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/l_blue.jpg) bottom no-repeat;">'.number_format($ahle4).$s_d.$ahlevel4.'%)</span></td>
+'.$t_d.' background: url('.$CONF['PluginURL'].'analyze/red.jpg) bottom no-repeat;">'.number_format($ahle5).$s_d.$ahlevel5.'%)</span></td>
 </tr>';
 		}
 		mysql_free_result($result);
@@ -1296,7 +1296,7 @@ $t_sort.$pv.'" title="'._NP_ANALYZE_SORT.'">'._NP_ANALYZE_HIT.'</a></th>';
 <td>'.$apid1.'</td>';
 			if($_GET['query'] && $_GET['group'] == 'page') {
 				$num1 = quickQuery("SELECT aphit1 as result FROM ".sql_table('plugin_analyze_page')." WHERE LEFT(apdate, 7) = '".$this_month."' and apid LIKE '".addslashes(htmlspecialchars($_GET['query']))."?%'");
-				$num2 = '<img src="'.$CONF['PluginURL'].'analyze/pink.png" alt="point" title="'.(round($row['appvisit']/$num1, 4)*100).'%" height="10" width="'.(round($row['appvisit']/$num1, 3)*130).'"> ';
+				$num2 = '<img src="'.$CONF['PluginURL'].'analyze/pink.jpg" alt="point" title="'.(round($row['appvisit']/$num1, 4)*100).'%" height="10" width="'.(round($row['appvisit']/$num1, 3)*130).'"> ';
 			}
 			$result_a .= '<td style="text-align: right;">'.$num2.number_format($row['appvisit']).'</td>
 <td style="text-align: right;">'.number_format($row['apphit']).'</td>
