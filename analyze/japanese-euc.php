@@ -102,7 +102,7 @@
 	define('_NP_ANALYZE_OP_2', '2. アンインストール時にテーブルを削除しますか？');
 	define('_NP_ANALYZE_OP_3', '3. 毎日メールでアクセス解析レポートを送りますか？');
 	define('_NP_ANALYZE_OP_4', '4. アクセス解析の開始日 (例. ');
-	define('_NP_ANALYZE_OP_5', '5. アクセス解析画面での各解析結果の表示件数（例. 1〜30）');
+	define('_NP_ANALYZE_OP_5', '5. アクセス解析画面での各解析結果の表示件数（例. 1~30）');
 	define('_NP_ANALYZE_OP_6', '6. 各訪問者の閲覧ページ数の分布（例. 1/5/9/49）');
 	define('_NP_ANALYZE_OP_7', '7. NP_Analyzeへのリンクを表示しますか？');
 	define('_NP_ANALYZE_OP_8', '8. 「QuickMenu」に追加しますか？');
@@ -160,4 +160,3 @@
 	define('_NP_ANALYZE_UPGRADE', '最新バージョンのチェック');
 	define('_NP_ANALYZE_VISIT', 'Hit');
 	define('_NP_ANALYZE_YES', 'はい');
-?>

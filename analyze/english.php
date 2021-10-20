@@ -160,4 +160,3 @@
 	define('_NP_ANALYZE_UPGRADE', 'Version Check');
 	define('_NP_ANALYZE_VISIT', 'Hit');
 	define('_NP_ANALYZE_YES', 'Yes');
-?>

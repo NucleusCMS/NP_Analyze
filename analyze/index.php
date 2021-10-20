@@ -514,7 +514,7 @@ AnalyzeMainGroup($hit_range ,$past, $this_month, $top_limit, 7, $sslink, $temp_j
 			echo '</tbody>
 </table>
 <input name="ok" type="hidden" value="'.$an.'" />
-<p><input name="ed" type="submit" value="'._NP_ANALYZE_EDIT.'" /> 
+<p><input name="ed" type="submit" value="'._NP_ANALYZE_EDIT.'" />
 <input name="del" type="submit" value="'._NP_ANALYZE_DELETE3.'" /></p>
 <p><a href="javascript:history.go(-1);">&#62; '._NP_ANALYZE_CANCEL.' &#60;</a></p></form>';
 			mysql_free_result($result);
@@ -911,7 +911,7 @@ AnalyzeMainGroup($hit_range ,$past, $this_month, $top_limit, 7, $sslink, $temp_j
 	}
 
 	function CsvDir($pastdir = '', $sslink = '', $opt_s = '') {
-		global $DIR_MEDIA; 
+		global $DIR_MEDIA;
 		switch(TRUE) {
 		case (!$_GET['re']):
 			switch(TRUE) {
@@ -956,7 +956,7 @@ AnalyzeMainGroup($hit_range ,$past, $this_month, $top_limit, 7, $sslink, $temp_j
 	}
 
 	function PlugEnd() {
-		global $oPluginAdmin; 
+		global $oPluginAdmin;
 		$oPluginAdmin->end();
 		exit;
 	}
@@ -1644,12 +1644,11 @@ $t_sort.$pv.'" title="'._NP_ANALYZE_SORT.'">'._NP_ANALYZE_HIT.'</a></th>';
 	}
 
 	function getmicrotime(){
-		list($usec, $sec) = explode(" ",microtime()); 
-		return ((float)$sec + (float)$usec); 
+		list($usec, $sec) = explode(" ",microtime());
+		return ((float)$sec + (float)$usec);
 	}
 
 	function IdChange($select = '', $id = '', $other = '', $past = '', $c = '', $que = '', $hd = '') {
 		global $oPluginAdmin;
 		return $oPluginAdmin->plugin->IdChange($select, $id, $other, $past, $c, $que, $hd);
 	}
-?>
