@@ -25,102 +25,102 @@ class NP_Analyze extends NucleusPlugin {
 		@mkdir($DIR_MEDIA."analyze", 0777);
 		umask($oldmask);
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_log').' (
-			allog int(11) not null auto_increment, 
-			alid varchar(30) not null, 
-			aldate datetime not null, 
-			alip varchar(60) not null, 
-			alreferer varchar(255) not null, 
-			alword varchar(200) not null, 
+			allog int(11) not null auto_increment,
+			alid varchar(30) not null,
+			aldate datetime not null,
+			alip varchar(60) not null,
+			alreferer varchar(255) not null,
+			alword varchar(200) not null,
 			PRIMARY KEY (allog)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_hit').' (
-			ahdate date not null, 
-			ahvisit int(11) unsigned not null, 
-			ahhit int(11) unsigned not null, 
-			ahlevel1 int(11) unsigned, 
-			ahlevel2 int(11) unsigned, 
-			ahlevel3 int(11) unsigned, 
-			ahlevel4 int(11) unsigned, 
-			ahlevel5 int(11) unsigned, 
-			ahrobot int(11) unsigned, 
+			ahdate date not null,
+			ahvisit int(11) unsigned not null,
+			ahhit int(11) unsigned not null,
+			ahlevel1 int(11) unsigned,
+			ahlevel2 int(11) unsigned,
+			ahlevel3 int(11) unsigned,
+			ahlevel4 int(11) unsigned,
+			ahlevel5 int(11) unsigned,
+			ahrobot int(11) unsigned,
 			PRIMARY KEY (ahdate)
 		)');
 		$rs = mysql_query("SELECT * FROM ".sql_table('plugin_analyze_hit'));
 		if(mysql_num_fields($rs) == 8) sql_query("ALTER TABLE ".sql_table('plugin_analyze_hit')." ADD ahrobot int(11) unsigned");
 		sql_query("INSERT IGNORE INTO ".sql_table('plugin_analyze_hit')." (ahdate, ahvisit, ahhit, ahlevel1, ahlevel2, ahlevel3, ahlevel4, ahlevel5) VALUES ('2000-01-01', '0', '0', '0', '0', '0', '0', '0')");
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_page').' (
-			apid varchar(30) not null, 
-			apdate date not null, 
-			aphit int(11) unsigned not null, 
-			aphit1 int(11) unsigned, 
+			apid varchar(30) not null,
+			apdate date not null,
+			aphit int(11) unsigned not null,
+			aphit1 int(11) unsigned,
 			aphit2 int(11) unsigned,
 			KEY apdate (apdate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_page_pattern').' (
-			appid varchar(30) not null, 
-			appdate date not null, 
-			apppage varchar(255), 
-			apphit int(11) unsigned not null, 
-			appvisit int(11) unsigned not null, 
+			appid varchar(30) not null,
+			appdate date not null,
+			apppage varchar(255),
+			apphit int(11) unsigned not null,
+			appvisit int(11) unsigned not null,
 			KEY appdate (appdate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_page_query').' (
-			apqid varchar(30) not null, 
-			apqdate date not null, 
-			apqquery varchar(255) not null, 
-			apqhit int(11) unsigned not null, 
-			apqvisit int(11) unsigned not null, 
+			apqid varchar(30) not null,
+			apqdate date not null,
+			apqquery varchar(255) not null,
+			apqhit int(11) unsigned not null,
+			apqvisit int(11) unsigned not null,
 			KEY apqdate (apqdate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_query').' (
-			aqquery varchar(255) not null, 
-			aqdate date not null, 
-			aqhit int(11) unsigned not null, 
-			aqvisit int(11) unsigned not null, 
+			aqquery varchar(255) not null,
+			aqdate date not null,
+			aqhit int(11) unsigned not null,
+			aqvisit int(11) unsigned not null,
 			KEY aqdate (aqdate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_engine').' (
-			aeengine varchar(30) not null, 
-			aedate date not null, 
-			aehit int(11) unsigned not null, 
-			aevisit int(11) unsigned not null, 
+			aeengine varchar(30) not null,
+			aedate date not null,
+			aehit int(11) unsigned not null,
+			aevisit int(11) unsigned not null,
 			KEY aedate (aedate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_robot').' (
-			aroengine varchar(30) not null, 
-			arodate date not null, 
-			arohit int(11) unsigned not null, 
-			arovisit int(11) unsigned not null, 
+			aroengine varchar(30) not null,
+			arodate date not null,
+			arohit int(11) unsigned not null,
+			arovisit int(11) unsigned not null,
 			KEY arodate (arodate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_referer').' (
-			arreferer varchar(255) not null, 
-			ardate date not null, 
-			arhit int(11) unsigned not null, 
-			arvisit int(11) unsigned not null, 
+			arreferer varchar(255) not null,
+			ardate date not null,
+			arhit int(11) unsigned not null,
+			arvisit int(11) unsigned not null,
 			KEY ardate (ardate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_host').' (
-			ahhost varchar(50) not null, 
-			ahdate date not null, 
-			ahhit int(11) unsigned not null, 
-			ahvisit int(11) unsigned not null, 
+			ahhost varchar(50) not null,
+			ahdate date not null,
+			ahhit int(11) unsigned not null,
+			ahvisit int(11) unsigned not null,
 			KEY ahdate (ahdate)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_temp').' (
-			allog int(11) not null, 
-			alid varchar(30) not null, 
-			aldate datetime not null, 
-			alip varchar(60) not null, 
-			alreferer varchar(255) not null, 
-			alword varchar(200) not null, 
+			allog int(11) not null,
+			alid varchar(30) not null,
+			aldate datetime not null,
+			alip varchar(60) not null,
+			alreferer varchar(255) not null,
+			alword varchar(200) not null,
 			KEY allog (allog)
 		)');
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_analyze_ng').' (
-			an int(11) not null auto_increment, 
-			anid tinyint(4) not null, 
-			antitle varchar(30) not null, 
-			anip varchar(255) not null, 
+			an int(11) not null auto_increment,
+			anid tinyint(4) not null,
+			antitle varchar(30) not null,
+			anip varchar(255) not null,
 			PRIMARY KEY (an)
 		)');
 		$in = quickQuery("SELECT COUNT(anid) as result FROM ".sql_table('plugin_analyze_ng')." LIMIT 1");
@@ -151,17 +151,17 @@ class NP_Analyze extends NucleusPlugin {
 		$this->createOption('alz_counter', _NP_ANALYZE_OP_22._NP_ANALYZE_OP_220.' )', 'text', _NP_ANALYZE_OP_220);
 	}
 	function InsertRobot() {
-		sql_query("INSERT INTO ".sql_table('plugin_analyze_ng')." (anid, antitle, anip) VALUES 
-('2', 'Google', '.googlebot.com'), 
-('2', 'msn', '.search.msn.com'), 
-('2', 'msn', 'msnbot.msn.com'), 
-('2', 'msn', '.phx.gbl'), 
-('2', 'Yahoo!', 'inktomisearch.com'), 
-('2', 'Yahoo!', '.fastsearch.net'), 
-('2', 'hatena', 'ns.hatena.ne.jp'), 
-('2', 'Alexa', '.alexa.com'), 
-('2', 'AT&T', '.attens.net'), 
-('2', 'ask', '.ask.com'), 
+		sql_query("INSERT INTO ".sql_table('plugin_analyze_ng')." (anid, antitle, anip) VALUES
+('2', 'Google', '.googlebot.com'),
+('2', 'msn', '.search.msn.com'),
+('2', 'msn', 'msnbot.msn.com'),
+('2', 'msn', '.phx.gbl'),
+('2', 'Yahoo!', 'inktomisearch.com'),
+('2', 'Yahoo!', '.fastsearch.net'),
+('2', 'hatena', 'ns.hatena.ne.jp'),
+('2', 'Alexa', '.alexa.com'),
+('2', 'AT&T', '.attens.net'),
+('2', 'ask', '.ask.com'),
 ('2', 'ask', '.ask.jp')
 ");
 	}
@@ -204,17 +204,17 @@ class NP_Analyze extends NucleusPlugin {
 	}
 	function getTableList() {
 		return array(
-sql_table('plugin_analyze_log'), 
-sql_table('plugin_analyze_hit'), 
-sql_table('plugin_analyze_page'), 
-sql_table('plugin_analyze_page_pattern'), 
-sql_table('plugin_analyze_page_query'), 
-sql_table('plugin_analyze_query'), 
-sql_table('plugin_analyze_engine'), 
-sql_table('plugin_analyze_robot'), 
-sql_table('plugin_analyze_referer'), 
-sql_table('plugin_analyze_host'), 
-sql_table('plugin_analyze_temp'), 
+sql_table('plugin_analyze_log'),
+sql_table('plugin_analyze_hit'),
+sql_table('plugin_analyze_page'),
+sql_table('plugin_analyze_page_pattern'),
+sql_table('plugin_analyze_page_query'),
+sql_table('plugin_analyze_query'),
+sql_table('plugin_analyze_engine'),
+sql_table('plugin_analyze_robot'),
+sql_table('plugin_analyze_referer'),
+sql_table('plugin_analyze_host'),
+sql_table('plugin_analyze_temp'),
 sql_table('plugin_analyze_ng')
 );
 	}
@@ -947,7 +947,7 @@ sql_table('plugin_analyze_ng')
 			mysql_free_result($tp1);
 			break;
 		case ($type == 'query'):
-			$que = ($m3 == "item") ? "i?".$itemid : $m3; 
+			$que = ($m3 == "item") ? "i?".$itemid : $m3;
 			$query = "SELECT apqid, apqquery, apqvisit FROM ".sql_table('plugin_analyze_page_query')." WHERE LEFT(apqdate, 7) = '".$qdate;
 			if($m3) $query .= "' and apqid LIKE '%".$que."?%";
 			$query .= "' ORDER BY apqvisit DESC LIMIT 0, ".$id;
@@ -1368,4 +1368,3 @@ plugin_analyze_robot=>arovisit
 		}
 	}
 }
-?>
