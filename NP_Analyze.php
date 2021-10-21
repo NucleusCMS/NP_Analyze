@@ -898,7 +898,7 @@ class NP_Analyze extends NucleusPlugin
                 mysql_free_result($tp1);
                 break;
             case ($type === 'query'):
-                $que = ($m3 == "item") ? "i?" . $itemid : $m3;
+                $que = ($m3 === 'item') ? 'i?' . $itemid : $m3;
                 $query = "SELECT apqid, apqquery, apqvisit FROM " . sql_table('plugin_analyze_page_query') . " WHERE LEFT(apqdate, 7) = '" . $qdate;
                 if ($m3) {
                     $query .= "' and apqid LIKE '%" . $que . "?%";
@@ -914,11 +914,11 @@ class NP_Analyze extends NucleusPlugin
                         echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
-                    if ($m3 != "item") {
+                    if ($m3 !== 'item') {
                         echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
                     }
                     switch (TRUE) {
-                        case ($m3 != "item" && $m2 > 1):
+                        case ($m3 !== 'item' && $m2 > 1):
                             if ($apid[0] === 'i') {
                                 $dr = $this->DirectLink($apid[1]);
                             }
@@ -1309,7 +1309,7 @@ class NP_Analyze extends NucleusPlugin
         if ($other && $other != 1 && $numb < 10 && $select !== 'mt') {
             $que1 .= '?' . $other;
         }
-        $sort = ($_GET['sort'] == "ASC") ? 'DESC' : 'ASC';
+        $sort = ($_GET['sort'] === 'ASC') ? 'DESC' : 'ASC';
         if ($select === 'a') {
             $asa = explode('/', $id);
             $id = $asa[1];
