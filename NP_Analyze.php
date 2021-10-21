@@ -235,31 +235,35 @@ class NP_Analyze extends NucleusPlugin
                     $apid
                 )
             );
-            $lo = mysql_num_rows($tp);
-            switch (TRUE) {
-                case ($lo):
-                    while ($resp = mysql_fetch_assoc($tp)) {
-                        $aphits = $resp['aphit'] + $aphit;
-                        $aphits1 = $resp['aphit1'] + $aphit1;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET aphit=%s, aphit1=%s, aphit2=%s, apdate='%s'"
-                                . " WHERE LEFT(apdate, 7)='%s-%s' AND apid='%s'",
-                                sql_table('plugin_analyze_page'),
-                                $aphits,
-                                $aphits1,
-                                $aphit2,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $apid
-                            )
-                        );
-                    }
-                    mysql_free_result($tp);
-                    break;
-                default:
-                    $i_page .= "('" . $apid . "', '" . $adate . "', '" . $aphit . "', '" . $aphit1 . "', '" . $aphit2 . "'),";
+            if (!mysql_num_rows($tp)) {
+                $i_page .= sprintf(
+                    "('%s', '%s', '%s', '%s', '%s'),",
+                    $apid,
+                    $adate,
+                    $aphit,
+                    $aphit1,
+                    $aphit2
+                );
+                $i++;
+                continue;
+            }
+            while ($resp = mysql_fetch_assoc($tp)) {
+                $aphits = $resp['aphit'] + $aphit;
+                $aphits1 = $resp['aphit1'] + $aphit1;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET aphit=%s, aphit1=%s, aphit2=%s, apdate='%s'"
+                        . " WHERE LEFT(apdate, 7)='%s-%s' AND apid='%s'",
+                        sql_table('plugin_analyze_page'),
+                        $aphits,
+                        $aphits1,
+                        $aphit2,
+                        $adate,
+                        $t1y,
+                        $t1m,
+                        $apid
+                    )
+                );
             }
             $i++;
         }
@@ -305,38 +309,25 @@ class NP_Analyze extends NucleusPlugin
                     $apppage
                 )
             );
-            $lo1 = mysql_num_rows($tp1);
-            switch (TRUE) {
-                case ($lo1):
-                    while ($respp = mysql_fetch_assoc($tp1)) {
-                        $apphit5 = $respp['apphit'] + $apphit;
-                        $appvisit5 = $respp['appvisit'] + $appvisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET apphit=%s, appvisit=%s, appdate='%s'"
-                                . " WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s'",
-                                sql_table('plugin_analyze_page_pattern'),
-                                $apphit5,
-                                $appvisit5,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $appid,
-                                $apppage
-                            )
-                        );
-                    }
-                    mysql_free_result($tp1);
-                    break;
-                default:
-                    $i_pagep .= sprintf(
-                        "('%s', '%s', '%s', '%s', '%s'),",
-                        $appid,
+            if (!mysql_num_rows($tp1)) {
+                $i_pagep .= sprintf("('%s', '%s', '%s', '%s', '%s'),", $appid, $adate, $apppage, $apphit, $appvisit);
+                continue;
+            }
+            while ($respp = mysql_fetch_assoc($tp1)) {
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET apphit=%s, appvisit=%s, appdate='%s'"
+                        . " WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s'",
+                        sql_table('plugin_analyze_page_pattern'),
+                        $respp['apphit'] + $apphit,
+                        $respp['appvisit'] + $appvisit,
                         $adate,
-                        $apppage,
-                        $apphit,
-                        $appvisit
-                    );
+                        $t1y,
+                        $t1m,
+                        $appid,
+                        $apppage
+                    )
+                );
             }
         }
         if ($i_pagep) {
@@ -387,38 +378,27 @@ class NP_Analyze extends NucleusPlugin
                     $apqquery
                 )
             );
-            $lo4 = mysql_num_rows($tp4);
-            switch (TRUE) {
-                case ($lo4):
-                    while ($resp4 = mysql_fetch_assoc($tp4)) {
-                        $apqhit2 = $resp4['apqhit'] + $apqhit;
-                        $apqvisit2 = $resp4['apqvisit'] + $apqvisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET apqhit=%s, apqvisit=%s, apqdate='%s'"
-                                . " WHERE LEFT(apqdate, 7) = '%s-%s' and apqid = '%s' and apqquery = '%s'",
-                                sql_table('plugin_analyze_page_query'),
-                                $apqhit2,
-                                $apqvisit2,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $apqid,
-                                $apqquery
-                            )
-                        );
-                    }
-                    mysql_free_result($tp4);
-                    break;
-                default:
-                    $i_pageq .= sprintf(
-                        "('%s', '%s', '%s', '%s', '%s'),",
-                        $apqid,
+            if (!mysql_num_rows($tp4)) {
+                $i_pageq .= sprintf("('%s', '%s', '%s', '%s', '%s'),", $apqid, $adate, $apqquery, $apqhit, $apqvisit);
+                continue;
+            }
+            while ($resp4 = mysql_fetch_assoc($tp4)) {
+                $apqhit2 = $resp4['apqhit'] + $apqhit;
+                $apqvisit2 = $resp4['apqvisit'] + $apqvisit;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET apqhit=%s, apqvisit=%s, apqdate='%s'"
+                        . " WHERE LEFT(apqdate, 7) = '%s-%s' and apqid = '%s' and apqquery = '%s'",
+                        sql_table('plugin_analyze_page_query'),
+                        $apqhit2,
+                        $apqvisit2,
                         $adate,
-                        $apqquery,
-                        $apqhit,
-                        $apqvisit
-                    );
+                        $t1y,
+                        $t1m,
+                        $apqid,
+                        $apqquery
+                    )
+                );
             }
         }
         if ($i_pageq) {
@@ -465,36 +445,26 @@ class NP_Analyze extends NucleusPlugin
                     $aqquery
                 )
             );
-            $lo5 = mysql_num_rows($tp5);
-            switch (TRUE) {
-                case ($lo5):
-                    while ($resp5 = mysql_fetch_assoc($tp5)) {
-                        $aqhit1 = $resp5['aqhit'] + $aqhit;
-                        $aqvisit1 = $resp5['aqvisit'] + $aqvisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET aqhit=%s, aqvisit=%s, aqdate='%s'"
-                                . " WHERE LEFT(aqdate, 7)='%s-%s' and aqquery='%s'",
-                                sql_table('plugin_analyze_query'),
-                                $aqhit1,
-                                $aqvisit1,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $aqquery
-                            )
-                        );
-                    }
-                    mysql_free_result($tp5);
-                    break;
-                default:
-                    $i_query .= sprintf(
-                        "('%s', '%s', '%s', '%s'),",
-                        $aqquery,
+            if (!mysql_num_rows($tp5)) {
+                $i_query .= sprintf("('%s', '%s', '%s', '%s'),", $aqquery, $adate, $aqhit, $aqvisit);
+                continue;
+            }
+            while ($resp5 = mysql_fetch_assoc($tp5)) {
+                $aqhit1 = $resp5['aqhit'] + $aqhit;
+                $aqvisit1 = $resp5['aqvisit'] + $aqvisit;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET aqhit=%s, aqvisit=%s, aqdate='%s'"
+                        . " WHERE LEFT(aqdate, 7)='%s-%s' and aqquery='%s'",
+                        sql_table('plugin_analyze_query'),
+                        $aqhit1,
+                        $aqvisit1,
                         $adate,
-                        $aqhit,
-                        $aqvisit
-                    );
+                        $t1y,
+                        $t1m,
+                        $aqquery
+                    )
+                );
             }
         }
         if ($i_query) {
@@ -542,30 +512,26 @@ class NP_Analyze extends NucleusPlugin
                     $aeengine
                 )
             );
-            $lo6 = mysql_num_rows($tp6);
-            switch (TRUE) {
-                case ($lo6):
-                    while ($resp6 = mysql_fetch_assoc($tp6)) {
-                        $aehit1 = $resp6['aehit'] + $aehit;
-                        $aevisit1 = $resp6['aevisit'] + $aevisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET aehit=%s, aevisit=%s, aedate='%s'"
-                                . " WHERE LEFT(aedate, 7)='%s-%s' and aeengine='%s'",
-                                sql_table('plugin_analyze_engine'),
-                                $aehit1,
-                                $aevisit1,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $aeengine
-                            )
-                        );
-                    }
-                    mysql_free_result($tp6);
-                    break;
-                default:
-                    $i_engine .= "('" . $aeengine . "', '" . $adate . "', '" . $aehit . "', '" . $aevisit . "'),";
+            if (!mysql_num_rows($tp6)) {
+                $i_engine .= sprintf("('%s', '%s', '%s', '%s'),", $aeengine, $adate, $aehit, $aevisit);
+                continue;
+            }
+            while ($resp6 = mysql_fetch_assoc($tp6)) {
+                $aehit1 = $resp6['aehit'] + $aehit;
+                $aevisit1 = $resp6['aevisit'] + $aevisit;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET aehit=%s, aevisit=%s, aedate='%s'"
+                        . " WHERE LEFT(aedate, 7)='%s-%s' and aeengine='%s'",
+                        sql_table('plugin_analyze_engine'),
+                        $aehit1,
+                        $aevisit1,
+                        $adate,
+                        $t1y,
+                        $t1m,
+                        $aeengine
+                    )
+                );
             }
         }
         if ($i_engine) {
@@ -613,30 +579,26 @@ class NP_Analyze extends NucleusPlugin
                     $arreferer
                 )
             );
-            $lo7 = mysql_num_rows($tp7);
-            switch (TRUE) {
-                case ($lo7):
-                    while ($resp7 = mysql_fetch_assoc($tp7)) {
-                        $arhit1 = $resp7['arhit'] + $arhit;
-                        $arvisit1 = $resp7['arvisit'] + $arvisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET arhit = %s, arvisit = %s, ardate = '%s'"
-                                . " WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s'",
-                                sql_table('plugin_analyze_referer'),
-                                $arhit1,
-                                $arvisit1,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $arreferer
-                            )
-                        );
-                    }
-                    mysql_free_result($tp7);
-                    break;
-                default:
-                    $i_referer .= "('" . $arreferer . "', '" . $adate . "', '" . $arhit . "', '" . $arvisit . "'),";
+            if (!mysql_num_rows($tp7)) {
+                $i_referer .= sprintf("('%s', '%s', '%s', '%s'),", $arreferer, $adate, $arhit, $arvisit);
+                continue;
+            }
+            while ($resp7 = mysql_fetch_assoc($tp7)) {
+                $arhit1 = $resp7['arhit'] + $arhit;
+                $arvisit1 = $resp7['arvisit'] + $arvisit;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET arhit = %s, arvisit = %s, ardate = '%s'"
+                        . " WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s'",
+                        sql_table('plugin_analyze_referer'),
+                        $arhit1,
+                        $arvisit1,
+                        $adate,
+                        $t1y,
+                        $t1m,
+                        $arreferer
+                    )
+                );
             }
         }
         if ($i_referer) {
@@ -682,30 +644,26 @@ class NP_Analyze extends NucleusPlugin
                     $ahhost
                 )
             );
-            $lo8 = mysql_num_rows($tp8);
-            switch (TRUE) {
-                case ($lo8):
-                    while ($resp8 = mysql_fetch_assoc($tp8)) {
-                        $ahhhit1 = $resp8['ahhit'] + $ahhhit;
-                        $ahvisit1 = $resp8['ahvisit'] + $ahvisit;
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET ahhit = %s, ahvisit = %s, ahdate = '%s'"
-                                . " WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s'",
-                                sql_table('plugin_analyze_host'),
-                                $ahhhit1,
-                                $ahvisit1,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $ahhost
-                            )
-                        );
-                    }
-                    mysql_free_result($tp8);
-                    break;
-                default:
-                    $i_host .= "('" . $ahhost . "', '" . $adate . "', '" . $ahhhit . "', '" . $ahvisit . "'),";
+            if (!mysql_num_rows($tp8)) {
+                $i_host .= sprintf("('%s', '%s', '%s', '%s'),", $ahhost, $adate, $ahhhit, $ahvisit);
+                continue;
+            }
+            while ($resp8 = mysql_fetch_assoc($tp8)) {
+                $ahhhit1 = $resp8['ahhit'] + $ahhhit;
+                $ahvisit1 = $resp8['ahvisit'] + $ahvisit;
+                sql_query(
+                    sprintf(
+                        "UPDATE %s SET ahhit = %s, ahvisit = %s, ahdate = '%s'"
+                        . " WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s'",
+                        sql_table('plugin_analyze_host'),
+                        $ahhhit1,
+                        $ahvisit1,
+                        $adate,
+                        $t1y,
+                        $t1m,
+                        $ahhost
+                    )
+                );
             }
         }
         if ($i_host) {
