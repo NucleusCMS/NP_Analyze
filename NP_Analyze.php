@@ -120,10 +120,10 @@ class NP_Analyze extends NucleusPlugin
         }
         $comment = $data['comment'];
         $commentid = $data['commentid'];
-        $alid = 'co?' . intval($commentid) . '?' . addslashes($comment['user']);
+        $alid = 'co?' . (int)$commentid . '?' . addslashes($comment['user']);
         $aldate = date('Y-m-d H:i:s', $comment['timestamp']);
         $alip = addslashes($comment['host']);
-        $alreferer = 'i?' . intval($comment['itemid']) . '?';
+        $alreferer = 'i?' . (int)$comment['itemid'] . '?';
         sql_query('INSERT INTO ' . sql_table('plugin_analyze_log') . " (alid, aldate, alip, alreferer) VALUES ('$alid', '$aldate', '$alip', '$alreferer')");
         return;
     }
@@ -460,17 +460,17 @@ class NP_Analyze extends NucleusPlugin
     function event_PreSkinParse(&$skindata)
     {
         global $CONF, $blog, $blogid, $catid, $itemid, $member, $memberid, $archive, $manager, $archivelist, $DIR_MEDIA, $query;
-        $blogid = intval($blogid);
-        $catid = intval($catid);
-        $itemid = intval($itemid);
-        $archivelist = intval($archivelist);
+        $blogid = (int)$blogid;
+        $catid = (int)$catid;
+        $itemid = (int)$itemid;
+        $archivelist = (int)$archivelist;
         if ($member->isLoggedIn() && $this->getOption('alz_loggedin') === 'no') {
             return;
         }
         $mact = $manager->pluginInstalled('NP_MultipleCategories');
         if ($mact) {
             global $subcatid;
-            $subcatid = intval($subcatid);
+            $subcatid = (int)$subcatid;
         }
         $icon = substr($_SERVER['REQUEST_URI'], -4, 4);
         switch (TRUE) {
@@ -823,10 +823,10 @@ class NP_Analyze extends NucleusPlugin
     function doSkinVar($skinType, $type = '', $id = '', $cat = '', $m1 = '', $m2 = '', $m3 = '', $m4 = '', $m5 = '')
     {
         global $itemid, $blogid, $catid;
-        $blogid = intval($blogid);
-        $catid = intval($catid);
-        $itemid = intval($itemid);
-        $m5 = intval($m5);
+        $blogid = (int)$blogid;
+        $catid = (int)$catid;
+        $itemid = (int)$itemid;
+        $m5 = (int)$m5;
         $qdate = (!($m2 == 1 || $m2 == 3)) ? date("Y-m") : date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01')));
         switch (TRUE) {
             case ($m1 === 'tr'):
@@ -1327,7 +1327,7 @@ class NP_Analyze extends NucleusPlugin
                 if ($past !== '+') {
                     $change = '<strong>I.</strong>';
                 }
-                $change .= ($apname) ? '<a href="' . $url . createItemLink(intval($id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+                $change .= ($apname) ? '<a href="' . $url . createItemLink((int)$id) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'b':
                 if ($past !== '+') {
@@ -1354,7 +1354,7 @@ class NP_Analyze extends NucleusPlugin
                     $change = '<strong>AL.</strong>';
                 }
                 if ($id) {
-                    $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink(intval($id)) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+                    $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink((int)$id) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 }
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'a':
@@ -1362,7 +1362,7 @@ class NP_Analyze extends NucleusPlugin
                     $change = '<strong>Ar.</strong>';
                 }
                 if ($id || $asa[0]) {
-                    $change .= ($apname1) ? '<a href="' . $url . createArchiveLink(intval($id), $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
+                    $change .= ($apname1) ? '<a href="' . $url . createArchiveLink((int)$id, $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
                 }
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'r':
@@ -1377,7 +1377,7 @@ class NP_Analyze extends NucleusPlugin
                 if ($past !== '+') {
                     $change = '<strong>M.</strong>';
                 }
-                $change .= ($apname) ? '<a href="' . $url . createMemberLink(intval($id)) . '" title="Member Page : ' . $apname . '">' . $apname . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+                $change .= ($apname) ? '<a href="' . $url . createMemberLink((int)$id) . '" title="Member Page : ' . $apname . '">' . $apname . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'im':
                 return '<strong>IMG.</strong>[Popup window]' . $this->ChangeData($past, $que1);
