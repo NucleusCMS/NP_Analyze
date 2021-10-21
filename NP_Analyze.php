@@ -130,7 +130,6 @@ class NP_Analyze extends NucleusPlugin
 
     function event_PostPluginOptionsUpdate(&$data)
     {
-        global $DIR_MEDIA;
         if ($data['plugid'] == $this->GetID()) {
             if ($this->getOption(alz_rss) === 'yes') {
                 sql_query("DELETE FROM " . sql_table('plugin_analyze_ng') . " WHERE antitle = 'rss'");
@@ -432,7 +431,6 @@ class NP_Analyze extends NucleusPlugin
 
     function ChangeDate($t_table = '', $t1y = '', $t1m = '', $mcsv = '', $adate = '', $t0m = '', $me2 = '')
     {
-        global $DIR_MEDIA, $CONF;
         $this->UpPage($t_table, $t1y, $t1m, $adate);
         $this->UpQuery($t_table, $t1y, $t1m, $adate);
         $this->UpEngine($t_table, $t1y, $t1m, $adate);
@@ -459,7 +457,7 @@ class NP_Analyze extends NucleusPlugin
 
     function event_PreSkinParse(&$skindata)
     {
-        global $CONF, $blog, $blogid, $catid, $itemid, $member, $memberid, $archive, $manager, $archivelist, $DIR_MEDIA, $query;
+        global $CONF, $blogid, $catid, $itemid, $member, $memberid, $archive, $manager, $archivelist, $query;
         $blogid = (int)$blogid;
         $catid = (int)$catid;
         $itemid = (int)$itemid;
@@ -1152,7 +1150,7 @@ class NP_Analyze extends NucleusPlugin
 
     function TempChange($past = '')
     {
-        global $DIR_MEDIA, $CONF;
+        global $DIR_MEDIA;
         $lines = @file($DIR_MEDIA . $this->getOption('alz_pastdir') . "/" . $past . ".csv");
         if ($this->getOption('alz_temp') !== 'yes' || !$lines) {
             return;
@@ -1190,7 +1188,6 @@ class NP_Analyze extends NucleusPlugin
 
     function Countting($id = '', $cat = '')
     {
-        global $blog;
         $aldate = date("U", time() + ($this->getOption('alz_time_d') * 3600));
         if (!$id) {
             $id = 'total';
@@ -1292,7 +1289,7 @@ class NP_Analyze extends NucleusPlugin
 
     function IdChange($select = '', $id = '', $other = '', $past = '', $c = '', $que = '', $hd = '')
     {
-        global $CONF, $member;
+        global $CONF;
         if (!$past) {
             $past = ($_GET['past']) ? addslashes($_GET['past']) : addslashes(postVar('past'));
         }
