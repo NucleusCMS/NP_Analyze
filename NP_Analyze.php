@@ -93,9 +93,15 @@ class NP_Analyze extends NucleusPlugin
     function event_QuickMenu(&$data)
     {
         global $member;
-        if ($this->getOption('alz_quickmenu') != 'yes') return;
-        if (!($member->isLoggedIn())) return;
-        if (!($this->loginMember() == 1 || $member->isAdmin())) return;
+        if ($this->getOption('alz_quickmenu') != 'yes') {
+            return;
+        }
+        if (!($member->isLoggedIn())) {
+            return;
+        }
+        if (!($this->loginMember() == 1 || $member->isAdmin())) {
+            return;
+        }
         array_push(
             $data['options'],
             array(
@@ -109,7 +115,9 @@ class NP_Analyze extends NucleusPlugin
     function event_PostAddComment(&$data)
     {
         global $member;
-        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') == 'no') return;
+        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') == 'no') {
+            return;
+        }
         $comment = $data['comment'];
         $commentid = $data['commentid'];
         $alid = 'co?' . intval($commentid) . '?' . addslashes($comment['user']);
@@ -141,7 +149,9 @@ class NP_Analyze extends NucleusPlugin
         $logmem = explode('/', $this->getOption('alz_member'));
         $logmem1 = 0;
         foreach ($logmem as $logm) {
-            if ($memberid == $logm) $logmem1++;
+            if ($memberid == $logm) {
+                $logmem1++;
+            }
         }
         return $logmem1;
     }
@@ -161,7 +171,9 @@ class NP_Analyze extends NucleusPlugin
         global $MYSQL_DATABASE;
         $rs = mysql_list_tables($MYSQL_DATABASE);
         while ($arr_row = mysql_fetch_row($rs)) {
-            if (in_array($tbl_name, $arr_row)) return true;
+            if (in_array($tbl_name, $arr_row)) {
+                return true;
+            }
         }
         return false;
     }
@@ -431,13 +443,17 @@ class NP_Analyze extends NucleusPlugin
         // Monthly
         if ($t0m != $t1m) {
             $d_count = $this->getOption('alz_d_count');
-            if ($d_count > 0) $this->DatabaseDelCount($t1y, $t1m, $d_count);
+            if ($d_count > 0) {
+                $this->DatabaseDelCount($t1y, $t1m, $d_count);
+            }
         }
         $this->AccessLog($mcsv, $t_table);
         $this->TempChange($mcsv);
         $t_1s = quickQuery("SELECT DATE_FORMAT(aldate,'%Y-%m-%d') as result FROM $t_table ORDER BY allog ASC LIMIT 1");
         $h_time = quickQuery("SELECT ahdate as result FROM " . sql_table('plugin_analyze_host') . " ORDER BY ahdate DESC LIMIT 1");
-        if ($h_time == $t_1s) sql_query("DROP TABLE " . $t_table);
+        if ($h_time == $t_1s) {
+            sql_query("DROP TABLE " . $t_table);
+        }
         return;
     }
 
@@ -448,7 +464,9 @@ class NP_Analyze extends NucleusPlugin
         $catid = intval($catid);
         $itemid = intval($itemid);
         $archivelist = intval($archivelist);
-        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') == 'no') return;
+        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') == 'no') {
+            return;
+        }
         $mact = $manager->pluginInstalled('NP_MultipleCategories');
         if ($mact) {
             global $subcatid;
@@ -489,7 +507,9 @@ class NP_Analyze extends NucleusPlugin
                 return;
             default:
                 foreach ($skindata['skin'] as $skins => $id) {
-                    if ($skins == 'contentType') $skin = $id;
+                    if ($skins == 'contentType') {
+                        $skin = $id;
+                    }
                 }
                 switch ($skin) {
                     case 'text/html':
@@ -526,13 +546,17 @@ class NP_Analyze extends NucleusPlugin
         $t0m = date("m", strtotime($aldate));
         $t0d = date("d", strtotime($aldate));
         // Referer
-        if ($_SERVER['HTTP_REFERER']) $alref1 = quickQuery("SELECT alid as result FROM " . sql_table('plugin_analyze_log') . " WHERE alip = '" . $alip . "' ORDER BY allog DESC LIMIT 1");
+        if ($_SERVER['HTTP_REFERER']) {
+            $alref1 = quickQuery("SELECT alid as result FROM " . sql_table('plugin_analyze_log') . " WHERE alip = '" . $alip . "' ORDER BY allog DESC LIMIT 1");
+        }
         switch (TRUE) {
             case (!$_SERVER['HTTP_REFERER']):
                 $alreferer = '';
                 break;
             case ($alref1):
-                if ($alid == $alref1) return;
+                if ($alid == $alref1) {
+                    return;
+                }
                 $alreferer = $alref1;
                 break;
             default:
@@ -569,7 +593,9 @@ class NP_Analyze extends NucleusPlugin
                     "search\.naver\." => 'NAVER'
                 );
                 foreach ($engines as $engine => $engin) {
-                    if (preg_match("/$engine/", $ref_b[0])) $alref = $engin;
+                    if (preg_match("/$engine/", $ref_b[0])) {
+                        $alref = $engin;
+                    }
                 }
                 $enco = _CHARSET;
                 $s_encode = 'EUC-JP, SJIS, UTF-8, JIS, ASCII';
@@ -751,7 +777,9 @@ class NP_Analyze extends NucleusPlugin
 
                 // LogTable change
                 $t_table = sql_table('plugin_analyze_templog');
-                if ($this->TableExists($t_table)) sql_query("DROP TABLE " . $t_table);
+                if ($this->TableExists($t_table)) {
+                    sql_query("DROP TABLE " . $t_table);
+                }
                 sql_query("CREATE TABLE " . $t_table . " as SELECT * FROM " . sql_table('plugin_analyze_log'));
                 sql_query("DELETE FROM " . $t_table . " WHERE " . $this->ExRobo('alip', '2') . "alip = ''");
                 sql_query("OPTIMIZE TABLE " . $t_table);
@@ -775,7 +803,9 @@ class NP_Analyze extends NucleusPlugin
                     $me2 .= "lev.3 : " . number_format($ahlevel30) . "\n";
                     $me2 .= "lev.4 : " . number_format($ahlevel40) . "\n";
                     $me2 .= "lev.5 : " . number_format($ahlevel50) . "\n\n\n";
-                    if ($t0m != $t1m && $this->getOption('alz_report_m') == 'yes') $me0 = SendMailMonth($t1y, $t1m);
+                    if ($t0m != $t1m && $this->getOption('alz_report_m') == 'yes') {
+                        $me0 = SendMailMonth($t1y, $t1m);
+                    }
                     $this->SendMail($adate, $me1 . $me0 . $me2);
                 }
 
@@ -809,7 +839,9 @@ class NP_Analyze extends NucleusPlugin
             default:
                 $m1a = 'span';
         }
-        if ($id > 100) $id = 100;
+        if ($id > 100) {
+            $id = 100;
+        }
         $i = 1;
         switch (TRUE) {
             case ($type == 'count' && $id == 'all'):
@@ -832,7 +864,9 @@ class NP_Analyze extends NucleusPlugin
                 }
                 $table = ($m4) ? 't_table' : 'plugin_analyze_page';
                 $query = "SELECT apid, aphit1 FROM " . sql_table($table) . $q1 . " WHERE LEFT(apdate, 7) = '" . $qdate;
-                if ($m3 && !$m4) $query .= "' and apid LIKE '%" . $m3 . "?%";
+                if ($m3 && !$m4) {
+                    $query .= "' and apid LIKE '%" . $m3 . "?%";
+                }
                 $query .= $q2 . "' ORDER BY aphit1 DESC LIMIT 0, " . $id;
                 $tp1 = sql_query($query);
                 while ($row = mysql_fetch_assoc($tp1)) {
@@ -840,15 +874,21 @@ class NP_Analyze extends NucleusPlugin
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) echo '
+                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) {
+                        echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                    }
                     echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
                     switch (TRUE) {
                         case ($m2 > 1):
-                            if ($apid[0] == 'i') $dr = $this->DirectLink($apid[1]);
+                            if ($apid[0] == 'i') {
+                                $dr = $this->DirectLink($apid[1]);
+                            }
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
-                    if (!($cat == 1 || $cat == 3)) echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['aphit1']) . '</' . $m1a . '>';
+                    if (!($cat == 1 || $cat == 3)) {
+                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['aphit1']) . '</' . $m1a . '>';
+                    }
                     echo '
 </' . $m1 . '>';
                     $i++;
@@ -858,7 +898,9 @@ class NP_Analyze extends NucleusPlugin
             case ($type == 'query'):
                 $que = ($m3 == "item") ? "i?" . $itemid : $m3;
                 $query = "SELECT apqid, apqquery, apqvisit FROM " . sql_table('plugin_analyze_page_query') . " WHERE LEFT(apqdate, 7) = '" . $qdate;
-                if ($m3) $query .= "' and apqid LIKE '%" . $que . "?%";
+                if ($m3) {
+                    $query .= "' and apqid LIKE '%" . $que . "?%";
+                }
                 $query .= "' ORDER BY apqvisit DESC LIMIT 0, " . $id;
                 $tp1 = sql_query($query);
                 while ($row = mysql_fetch_assoc($tp1)) {
@@ -866,16 +908,24 @@ class NP_Analyze extends NucleusPlugin
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) echo '
+                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) {
+                        echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
-                    if ($m3 != "item") echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
+                    }
+                    if ($m3 != "item") {
+                        echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
+                    }
                     switch (TRUE) {
                         case ($m3 != "item" && $m2 > 1):
-                            if ($apid[0] == 'i') $dr = $this->DirectLink($apid[1]);
+                            if ($apid[0] == 'i') {
+                                $dr = $this->DirectLink($apid[1]);
+                            }
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     echo '<' . $m1a . ' class="analyze_body"> ' . htmlspecialchars($row['apqquery']) . '</' . $m1a . '>';
-                    if (!($cat == 1 || $cat == 3)) echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['apqvisit']) . '</' . $m1a . '>';
+                    if (!($cat == 1 || $cat == 3)) {
+                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['apqvisit']) . '</' . $m1a . '>';
+                    }
                     echo '
 </' . $m1 . '>';
                     $i++;
@@ -887,7 +937,9 @@ class NP_Analyze extends NucleusPlugin
                 $data0 = ($m4) ? 'apppage' : 'appid';
                 $query = "SELECT appid, apppage, appvisit FROM " . sql_table('plugin_analyze_page_pattern') . " WHERE LEFT(appdate, 7) = '" . $qdate;
                 $query .= "' and " . $data . " LIKE '%i?" . $itemid . "?%";
-                if ($m3) $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
+                if ($m3) {
+                    $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
+                }
                 $query .= "' ORDER BY appvisit DESC LIMIT 0, " . $id;
                 $tp1 = sql_query($query);
                 while ($row = mysql_fetch_assoc($tp1)) {
@@ -899,16 +951,22 @@ class NP_Analyze extends NucleusPlugin
                     $data2 = ($m4) ? $apid2[0] : $apid[0];
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) echo '
+                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) {
+                        echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                    }
                     echo '
 <' . $m1a . ' class="analyze_body">' . $data1 . '</' . $m1a . '>';
                     switch (TRUE) {
                         case ($m2 > 1):
-                            if ($data2 == 'i') $dr = $this->DirectLink($apid[1]);
+                            if ($data2 == 'i') {
+                                $dr = $this->DirectLink($apid[1]);
+                            }
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
-                    if (!($cat == 1 || $cat == 3)) echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['appvisit']) . '</' . $m1a . '>';
+                    if (!($cat == 1 || $cat == 3)) {
+                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['appvisit']) . '</' . $m1a . '>';
+                    }
                     echo '
 </' . $m1 . '>';
                     $i++;
@@ -922,16 +980,24 @@ class NP_Analyze extends NucleusPlugin
                 $tp1 = sql_query($query);
                 while ($row = mysql_fetch_assoc($tp1)) {
                     $ref_l = htmlspecialchars($row['arreferer']);
-                    if (!$m5) $m5 = '50';
+                    if (!$m5) {
+                        $m5 = '50';
+                    }
                     $link = substr($ref_l, 0, $m5);
-                    if (strlen($ref_l) > $m5) $link .= '...';
+                    if (strlen($ref_l) > $m5) {
+                        $link .= '...';
+                    }
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) echo '
+                    if (!($m1 == 'li' || $cat == 2 || $cat == 3)) {
+                        echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                    }
                     echo '
 <' . $m1a . ' class="analyze_body"><a href="' . $ref_l . '">' . $link . '</a></' . $m1a . '>';
-                    if (!($cat == 1 || $cat == 3)) echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['arvisit']) . '</' . $m1a . '>';
+                    if (!($cat == 1 || $cat == 3)) {
+                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['arvisit']) . '</' . $m1a . '>';
+                    }
                     echo '
 </' . $m1 . '>';
                     $i++;
@@ -946,15 +1012,21 @@ class NP_Analyze extends NucleusPlugin
     function DirectLink($itemid = '')
     {
         global $CONF, $member;
-        if (!($member->isLoggedIn())) return;
-        if (!($this->loginMember() == 1 || $member->isAdmin())) return;
+        if (!($member->isLoggedIn())) {
+            return;
+        }
+        if (!($this->loginMember() == 1 || $member->isAdmin())) {
+            return;
+        }
         $tp0 = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=i?' . $itemid . '&amp;past=' . date("Y-m") . '"><img src="' . $CONF['AdminURL'] . 'documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
         $q1 = "SELECT aphit1 as result FROM " . sql_table('plugin_analyze_page') . " WHERE LEFT(apdate, 7) = '";
         $q2 = "' and apid LIKE '%i?" . $itemid . "?%' LIMIT 1";
         $tp1 = quickQuery($q1 . date("Y-m") . $q2);
         $tp2 = quickQuery($q1 . date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01'))) . $q2);
         $chan = $tp0 . number_format($tp1);
-        if ($tp2) $chan .= '(*' . number_format($tp2) . ')';
+        if ($tp2) {
+            $chan .= '(*' . number_format($tp2) . ')';
+        }
         return '<span style="font-size: 10px; color: #aaa;">' . $chan . '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;query=i?' . $itemid . '?"><img src="' . $CONF['AdminURL'] . 'documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . '"></a></span>';
     }
 
@@ -973,8 +1045,12 @@ class NP_Analyze extends NucleusPlugin
         $anid = ($anid) ? $anid : '1,2';
         $result = sql_query("SELECT anip, antitle FROM " . sql_table('plugin_analyze_ng') . " WHERE anid in (" . $anid . ")");
         while ($res = mysql_fetch_assoc($result)) {
-            if ($res['antitle'] == 'rss') $robo .= " alid = 'r?' or ";
-            if ($res['anip']) $robo .= $alip . " LIKE '%" . $res['anip'] . "%' or ";
+            if ($res['antitle'] == 'rss') {
+                $robo .= " alid = 'r?' or ";
+            }
+            if ($res['anip']) {
+                $robo .= $alip . " LIKE '%" . $res['anip'] . "%' or ";
+            }
         }
         mysql_free_result($result);
         return $robo;
@@ -1041,7 +1117,9 @@ class NP_Analyze extends NucleusPlugin
             $rows = mysql_num_rows($rs);
             $c_2 = $rows - $d_count;
             foreach ($mtable3 as $md => $md1) {
-                if ($mt == $md && $c_2 > 0) sql_query("DELETE FROM " . sql_table($mt) . " WHERE " . $mt1 . " >= '" . $pe_d . "' and " . $mt1 . " < '" . $pe_d2 . "' ORDER BY " . $md1 . " ASC LIMIT " . $c_2);
+                if ($mt == $md && $c_2 > 0) {
+                    sql_query("DELETE FROM " . sql_table($mt) . " WHERE " . $mt1 . " >= '" . $pe_d . "' and " . $mt1 . " < '" . $pe_d2 . "' ORDER BY " . $md1 . " ASC LIMIT " . $c_2);
+                }
             }
             sql_query("OPTIMIZE TABLE " . sql_table($mt));
         }
@@ -1056,7 +1134,9 @@ class NP_Analyze extends NucleusPlugin
         while ($row = mysql_fetch_array($rs)) {
             for ($j = 0; $j < $fields; $j++) {
                 $data0 .= '"' . addslashes($row[$j]) . '"';
-                if ($j < $fields - 1) $data0 .= ',';
+                if ($j < $fields - 1) {
+                    $data0 .= ',';
+                }
             }
             $data0 .= "\n";
         }
@@ -1070,9 +1150,13 @@ class NP_Analyze extends NucleusPlugin
     {
         global $DIR_MEDIA, $CONF;
         $lines = @file($DIR_MEDIA . $this->getOption('alz_pastdir') . "/" . $past . ".csv");
-        if ($this->getOption('alz_temp') != 'yes' || !$lines) return;
+        if ($this->getOption('alz_temp') != 'yes' || !$lines) {
+            return;
+        }
         $ct = $this->getOption('alz_temp_c');
-        if (!$ct) $ct = 5000;
+        if (!$ct) {
+            $ct = 5000;
+        }
         $tem = sql_table('plugin_analyze_temp');
         sql_query("TRUNCATE TABLE " . $tem);
         $i = 0;
@@ -1104,7 +1188,9 @@ class NP_Analyze extends NucleusPlugin
     {
         global $blog;
         $aldate = date("U", time() + ($this->getOption('alz_time_d') * 3600));
-        if (!$id) $id = 'total';
+        if (!$id) {
+            $id = 'total';
+        }
         $today_c = " as result FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '')";
         switch ($id) {
             case 'all':
@@ -1150,8 +1236,12 @@ class NP_Analyze extends NucleusPlugin
     {
         $ac = $this->getOption('alz_count');
         $ref_a = explode('//', $apname, 2);
-        if ($ref_a[0] == 'http:') $apname = $ref_a[1];
-        if (!$acount) $acount = ($ac) ? $ac : 18;
+        if ($ref_a[0] == 'http:') {
+            $apname = $ref_a[1];
+        }
+        if (!$acount) {
+            $acount = ($ac) ? $ac : 18;
+        }
         switch ($ref_a[0]) {
             case 'http:':
                 $apname1 = mb_strimwidth($apname, 0, $acount, '..');
@@ -1168,20 +1258,30 @@ class NP_Analyze extends NucleusPlugin
     function ChangeData($past = '', $que1 = '', $jd = '', $que = '', $hd = '', $bd = '')
     {
         global $CONF;
-        if ($past == '+') return;
-        if ($que == 1) $jd = '';
+        if ($past == '+') {
+            return;
+        }
+        if ($que == 1) {
+            $jd = '';
+        }
         switch (TRUE) {
             case ($hd):
-                if ($bd) $que1 = $bd;
+                if ($bd) {
+                    $que1 = $bd;
+                }
                 $chan = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=' . $que1 . '&amp;past=' . $past . '"><img src="documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
         }
         switch (TRUE) {
             case ($this->getOption('alz_temp') == 'no' && ($past || ($_GET['group']) == 'page')):
                 break;
             default:
-                if (!$past && ($_GET['group']) == 'page') $past = date("Y-m");
+                if (!$past && ($_GET['group']) == 'page') {
+                    $past = date("Y-m");
+                }
                 $chan .= ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que1 . $jd . '&amp;jd=' . $past . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . '"></a> ' . $other;
-                if ($que && $que != 1) $chan .= $que . ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . ' : ' . $que . '"></a>';
+                if ($que && $que != 1) {
+                    $chan .= $que . ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . ' : ' . $que . '"></a>';
+                }
         }
         return $chan;
     }
@@ -1189,7 +1289,9 @@ class NP_Analyze extends NucleusPlugin
     function IdChange($select = '', $id = '', $other = '', $past = '', $c = '', $que = '', $hd = '')
     {
         global $CONF, $member;
-        if (!$past) $past = ($_GET['past']) ? addslashes($_GET['past']) : addslashes(postVar('past'));
+        if (!$past) {
+            $past = ($_GET['past']) ? addslashes($_GET['past']) : addslashes(postVar('past'));
+        }
         $numb = strlen($select);
         $other = htmlspecialchars($other);
         switch (TRUE) {
@@ -1203,44 +1305,78 @@ class NP_Analyze extends NucleusPlugin
                 $url = substr($CONF['IndexURL'], 0, -1);
         }
         $que1 = ($numb > 3) ? substr($select, 0, 60) : $select . '?' . $id;
-        if ($other && $other != 1 && $numb < 10 && $select != 'mt') $que1 .= '?' . $other;
+        if ($other && $other != 1 && $numb < 10 && $select != 'mt') {
+            $que1 .= '?' . $other;
+        }
         $sort = ($_GET['sort'] == "ASC") ? 'DESC' : 'ASC';
         if ($select == 'a') {
             $asa = explode('/', $id);
             $id = $asa[1];
         }
-        if ($select != 'en' && $select != 'mt' && is_numeric($id)) $apname1 = quickQuery('SELECT bname as result FROM ' . sql_table('blog') . ' WHERE bnumber = ' . $id);
-        if ($this->getOption('alz_oname') != 'no') $oname_j = $this->oName($other, 10);
+        if ($select != 'en' && $select != 'mt' && is_numeric($id)) {
+            $apname1 = quickQuery('SELECT bname as result FROM ' . sql_table('blog') . ' WHERE bnumber = ' . $id);
+        }
+        if ($this->getOption('alz_oname') != 'no') {
+            $oname_j = $this->oName($other, 10);
+        }
         switch ($select) {
             case 'i':
-                if (is_numeric($id)) $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ' WHERE inumber = ' . $id);
-                if ($past != '+') $change = '<strong>I.</strong>';
+                if (is_numeric($id)) {
+                    $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ' WHERE inumber = ' . $id);
+                }
+                if ($past != '+') {
+                    $change = '<strong>I.</strong>';
+                }
                 $change .= ($apname) ? '<a href="' . $url . createItemLink(intval($id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'b':
-                if ($past != '+') $change = '<strong>B.</strong>';
-                if (is_numeric($id)) $change .= ($apname1) ? '<a href="' . $url . createBlogidLink($id) . '" title="' . $apname1 . ' ' . $other . '">' . $this->oName($apname1, $c) . '</a>' . $oname_j : $id . ' ' . _NP_ANALYZE_DEL;
+                if ($past != '+') {
+                    $change = '<strong>B.</strong>';
+                }
+                if (is_numeric($id)) {
+                    $change .= ($apname1) ? '<a href="' . $url . createBlogidLink($id) . '" title="' . $apname1 . ' ' . $other . '">' . $this->oName($apname1, $c) . '</a>' . $oname_j : $id . ' ' . _NP_ANALYZE_DEL;
+                }
                 return $change . $this->ChangeData($past, $que1, '?', 1, $hd, 'b?' . $id);
             case 'c':
-                if (is_numeric($id)) $apname = quickQuery('SELECT cname as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
-                if (is_numeric($id)) $bid = quickQuery('SELECT cblog as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
-                if ($past != '+') $change = '<strong>C.</strong>';
+                if (is_numeric($id)) {
+                    $apname = quickQuery('SELECT cname as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
+                }
+                if (is_numeric($id)) {
+                    $bid = quickQuery('SELECT cblog as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
+                }
+                if ($past != '+') {
+                    $change = '<strong>C.</strong>';
+                }
                 $change .= ($apname) ? '<a href="' . $url . createBlogidLink($bid, array('catid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'l':
-                if ($past != '+') $change = '<strong>AL.</strong>';
-                if ($id) $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink(intval($id)) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+                if ($past != '+') {
+                    $change = '<strong>AL.</strong>';
+                }
+                if ($id) {
+                    $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink(intval($id)) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+                }
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'a':
-                if ($past != '+') $change = '<strong>Ar.</strong>';
-                if ($id || $asa[0]) $change .= ($apname1) ? '<a href="' . $url . createArchiveLink(intval($id), $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
+                if ($past != '+') {
+                    $change = '<strong>Ar.</strong>';
+                }
+                if ($id || $asa[0]) {
+                    $change .= ($apname1) ? '<a href="' . $url . createArchiveLink(intval($id), $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
+                }
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'r':
-                if ($past != '+') $change = '<strong>R.</strong>';
+                if ($past != '+') {
+                    $change = '<strong>R.</strong>';
+                }
                 return $change . 'XML-RSS ' . $id . $this->ChangeData($past, $que1);
             case 'm':
-                if (is_numeric($id)) $apname = quickQuery('SELECT mname as result FROM ' . sql_table('member') . ' WHERE mnumber = ' . $id);
-                if ($past != '+') $change = '<strong>M.</strong>';
+                if (is_numeric($id)) {
+                    $apname = quickQuery('SELECT mname as result FROM ' . sql_table('member') . ' WHERE mnumber = ' . $id);
+                }
+                if ($past != '+') {
+                    $change = '<strong>M.</strong>';
+                }
                 $change .= ($apname) ? '<a href="' . $url . createMemberLink(intval($id)) . '" title="Member Page : ' . $apname . '">' . $apname . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'im':
@@ -1250,18 +1386,32 @@ class NP_Analyze extends NucleusPlugin
                 $change .= (is_numeric($id)) ? '<a href="' . $url . '?query=' . $other . '&amp;blogid=' . $id . '" title="' . _NP_ANALYZE_SEARCH_PAGE . ' : ' . $apname1 . '">' . _NP_ANALYZE_SEARCH . '</a>' : _NP_ANALYZE_SEARCH_PAGE;
                 return $change . '</strong>' . $this->ChangeData($past, $que1, '?') . $other;
             case 'en':
-                if ($other == 1) return $id . $this->ChangeData($past, $que1);
-                if ($other != 1) return '<strong>[' . $id . ']</strong> ' . $this->ChangeData($past, $que1, '', $que);
+                if ($other == 1) {
+                    return $id . $this->ChangeData($past, $que1);
+                }
+                if ($other != 1) {
+                    return '<strong>[' . $id . ']</strong> ' . $this->ChangeData($past, $que1, '', $que);
+                }
             case 'co':
-                if (is_numeric($id)) $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
-                if (is_numeric($id)) $aid = quickQuery('SELECT inumber as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
+                if (is_numeric($id)) {
+                    $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
+                }
+                if (is_numeric($id)) {
+                    $aid = quickQuery('SELECT inumber as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
+                }
                 $change = '<strong>Co.</strong>';
                 $change .= ($aid) ? '<a href="' . $url . createItemLink($aid) . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->oName($other, 10) : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?');
             case 'sb':
-                if (is_numeric($id)) $apname = quickQuery('SELECT sname as result FROM ' . sql_table('plug_multiple_categories_sub') . ' WHERE scatid = ' . $id);
-                if (is_numeric($id)) $bid = quickQuery('SELECT bnumber as result FROM ' . sql_table('plug_multiple_categories_sub') . ' as sb, ' . sql_table('category') . ' as c, ' . sql_table('blog') . ' as b WHERE c.cblog = b.bnumber and c.catid = sb.catid and sb.scatid = ' . $id);
-                if ($past != '+') $change = '<strong>Sb.</strong>';
+                if (is_numeric($id)) {
+                    $apname = quickQuery('SELECT sname as result FROM ' . sql_table('plug_multiple_categories_sub') . ' WHERE scatid = ' . $id);
+                }
+                if (is_numeric($id)) {
+                    $bid = quickQuery('SELECT bnumber as result FROM ' . sql_table('plug_multiple_categories_sub') . ' as sb, ' . sql_table('category') . ' as c, ' . sql_table('blog') . ' as b WHERE c.cblog = b.bnumber and c.catid = sb.catid and sb.scatid = ' . $id);
+                }
+                if ($past != '+') {
+                    $change = '<strong>Sb.</strong>';
+                }
                 $change .= ($bid) ? '<a href="' . $url . createBlogidLink($bid, array('subcatid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
             case 'mt':
@@ -1275,7 +1425,9 @@ class NP_Analyze extends NucleusPlugin
                     $re = sql_query('SELECT tagname FROM ' . sql_table('plugin_multitags') . ' WHERE tagid in (' . $ids . ')');
                     while ($row = mysql_fetch_assoc($re)) $apname .= $row['tagname'] . '+';
                     $apname = substr($apname, 0, -1);
-                    if ($apname) $que =  quickQuery("SELECT odef as result FROM " . sql_table('plugin') . ", " . sql_table('plugin_option_desc') . " WHERE opid = pid and oname = 'tag_query' and pfile = 'NP_MultiTags'");
+                    if ($apname) {
+                        $que = quickQuery("SELECT odef as result FROM " . sql_table('plugin') . ", " . sql_table('plugin_option_desc') . " WHERE opid = pid and oname = 'tag_query' and pfile = 'NP_MultiTags'");
+                    }
                     switch ($CONF['URLMode']) {
                         case 'normal':
                             $id2 = '&amp;' . $que . '=' . $other;
@@ -1284,13 +1436,17 @@ class NP_Analyze extends NucleusPlugin
                             $id2 = '/' . $que . '/' . $other;
                     }
                 }
-                if ($past != '+') $change = '<strong>MT.</strong>';
+                if ($past != '+') {
+                    $change = '<strong>MT.</strong>';
+                }
                 $change .= ($apname) ? '<a href="' . $url . createBlogidLink($id) . $id2 . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->ChangeData($past, $que1) : $other;
                 return $change;
             case 'e':
                 return '<strong>E.</strong>' . _NP_ANALYZE_ERROR_PAGE . ' ' . $id . $this->ChangeData($past, $que1);
             default:
-                if (!$select) return;
+                if (!$select) {
+                    return;
+                }
                 $select = htmlspecialchars($select);
                 switch (TRUE) {
                     case ($id == 1):
