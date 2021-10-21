@@ -1779,39 +1779,100 @@ class NP_Analyze extends NucleusPlugin
         $today_c = " as result FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '')";
         switch ($id) {
             case 'all':
-                $today_v = mysql_num_rows(sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip ORDER BY null"));
-                $total_v = quickQuery("SELECT ahvisit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1");
-                $yday = quickQuery("SELECT ahvisit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1");
+                $today_v = mysql_num_rows(
+                    sql_query(
+                        sprintf(
+                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                            $today_c
+                        )
+                    )
+                );
+                $total_v = quickQuery(
+                    sprintf(
+                        "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
+                $yday = quickQuery(
+                    sprintf(
+                        "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
                 $s0 = explode('/', $this->getOption('alz_counter'));
                 return $s0[0] . number_format($total_v + $today_v) . $s0[1] . number_format($today_v) . $s0[2] . number_format($yday);
                 break;
             case 'total':
-                $today_v = mysql_num_rows(sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip ORDER BY null"));
-                $total_v = quickQuery("SELECT ahvisit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1");
+                $today_v = mysql_num_rows(
+                    sql_query(
+                        sprintf(
+                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                            $today_c)
+                    )
+                );
+                $total_v = quickQuery(
+                    sprintf(
+                        "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
                 return ($total_v + $today_v);
             case 'total2':
                 $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
-                $total_v1 = quickQuery("SELECT ahhit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1");
+                $total_v1 = quickQuery(
+                    sprintf(
+                        "SELECT ahhit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
                 return ($total_v1 + $today_v1);
             case 'today':
-                $today_v = mysql_num_rows(sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip ORDER BY null"));
+                $today_v = mysql_num_rows(
+                    sql_query(
+                        sprintf(
+                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                            $today_c)
+                    )
+                );
                 return ($today_v);
             case 'today2':
                 $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
                 return $today_v1;
             case 'yesterday':
-                return quickQuery("SELECT ahvisit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1");
+                return quickQuery(
+                    sprintf(
+                        "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
             case 'yesterday2':
-                return quickQuery("SELECT ahhit as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1");
+                return quickQuery(
+                    sprintf(
+                        "SELECT ahhit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
             default:
                 switch ($cat) {
                     case '2':
                         $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
-                        $week_v1 = quickQuery("SELECT SUM(ahhit) as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate > " . mysqldate($aldate - 86400 * $id));
+                        $week_v1 = quickQuery(
+                            sprintf(
+                                "SELECT SUM(ahhit) as result FROM %s WHERE ahdate > %s",
+                                sql_table('plugin_analyze_hit'),
+                                mysqldate($aldate - 86400 * $id)
+                            )
+                        );
                         return ($week_v1 + $today_v1);
                     default:
                         $today_v = mysql_num_rows(sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip"));
-                        $week_v = quickQuery("SELECT SUM(ahvisit) as result FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate > " . mysqldate($aldate - 86400 * $id));
+                        $week_v = quickQuery(
+                            sprintf(
+                                "SELECT SUM(ahvisit) as result FROM %s WHERE ahdate > %s",
+                                sql_table('plugin_analyze_hit'),
+                                mysqldate($aldate - 86400 * $id)
+                            )
+                        );
                         return ($week_v + $today_v);
                 }
         }
@@ -1899,7 +1960,13 @@ class NP_Analyze extends NucleusPlugin
             $id = $asa[1];
         }
         if ($select !== 'en' && $select !== 'mt' && is_numeric($id)) {
-            $apname1 = quickQuery('SELECT bname as result FROM ' . sql_table('blog') . ' WHERE bnumber = ' . $id);
+            $apname1 = quickQuery(
+                sprintf(
+                    "SELECT bname as result FROM %s WHERE bnumber=%s",
+                    sql_table('blog'),
+                    $id
+                )
+            );
         }
         if ($this->getOption('alz_oname') !== 'no') {
             $oname_j = $this->oName($other, 10);
@@ -1907,7 +1974,13 @@ class NP_Analyze extends NucleusPlugin
         switch ($select) {
             case 'i':
                 if (is_numeric($id)) {
-                    $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ' WHERE inumber = ' . $id);
+                    $apname = quickQuery(
+                        sprintf(
+                            "SELECT ititle as result FROM %s WHERE inumber = %s",
+                            sql_table('item'),
+                            $id
+                        )
+                    );
                 }
                 if ($past !== '+') {
                     $change = '<strong>I.</strong>';
@@ -1924,10 +1997,22 @@ class NP_Analyze extends NucleusPlugin
                 return $change . $this->ChangeData($past, $que1, '?', 1, $hd, 'b?' . $id);
             case 'c':
                 if (is_numeric($id)) {
-                    $apname = quickQuery('SELECT cname as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
+                    $apname = quickQuery(
+                        sprintf(
+                            "SELECT cname as result FROM %s WHERE catid = %s",
+                            sql_table('category'),
+                            $id
+                        )
+                    );
                 }
                 if (is_numeric($id)) {
-                    $bid = quickQuery('SELECT cblog as result FROM ' . sql_table('category') . ' WHERE catid = ' . $id);
+                    $bid = quickQuery(
+                        sprintf(
+                            "SELECT cblog as result FROM %s WHERE catid = %s",
+                            sql_table('category'),
+                            $id
+                        )
+                    );
                 }
                 if ($past !== '+') {
                     $change = '<strong>C.</strong>';
@@ -1957,7 +2042,13 @@ class NP_Analyze extends NucleusPlugin
                 return $change . 'XML-RSS ' . $id . $this->ChangeData($past, $que1);
             case 'm':
                 if (is_numeric($id)) {
-                    $apname = quickQuery('SELECT mname as result FROM ' . sql_table('member') . ' WHERE mnumber = ' . $id);
+                    $apname = quickQuery(
+                        sprintf(
+                            "SELECT mname as result FROM %s WHERE mnumber = %s",
+                            sql_table('member'),
+                            $id
+                        )
+                    );
                 }
                 if ($past !== '+') {
                     $change = '<strong>M.</strong>';
@@ -1979,20 +2070,49 @@ class NP_Analyze extends NucleusPlugin
                 }
             case 'co':
                 if (is_numeric($id)) {
-                    $apname = quickQuery('SELECT ititle as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
+                    $apname = quickQuery(
+                        sprintf(
+                            "SELECT ititle as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                            sql_table('item'),
+                            sql_table('comment'),
+                            $id
+                        )
+                    );
                 }
                 if (is_numeric($id)) {
-                    $aid = quickQuery('SELECT inumber as result FROM ' . sql_table('item') . ', ' . sql_table('comment') . ' WHERE inumber = citem and cnumber = ' . $id);
+                    $aid = quickQuery(
+                        sprintf(
+                            "SELECT inumber as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                            sql_table('item'),
+                            sql_table('comment'),
+                            $id
+                        )
+                    );
                 }
                 $change = '<strong>Co.</strong>';
                 $change .= ($aid) ? '<a href="' . $url . createItemLink($aid) . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->oName($other, 10) : $id . ' ' . _NP_ANALYZE_DEL;
                 return $change . $this->ChangeData($past, $que1, '?');
             case 'sb':
                 if (is_numeric($id)) {
-                    $apname = quickQuery('SELECT sname as result FROM ' . sql_table('plug_multiple_categories_sub') . ' WHERE scatid = ' . $id);
+                    $apname = quickQuery(
+                        sprintf(
+                            "SELECT sname as result FROM %s WHERE scatid = %s",
+                            sql_table('plug_multiple_categories_sub'),
+                            $id
+                        )
+                    );
                 }
                 if (is_numeric($id)) {
-                    $bid = quickQuery('SELECT bnumber as result FROM ' . sql_table('plug_multiple_categories_sub') . ' as sb, ' . sql_table('category') . ' as c, ' . sql_table('blog') . ' as b WHERE c.cblog = b.bnumber and c.catid = sb.catid and sb.scatid = ' . $id);
+                    $bid = quickQuery(
+                        sprintf(
+                            "SELECT bnumber as result FROM %s as sb, %s as c, %s as b"
+                            . " WHERE c.cblog=b.bnumber and c.catid=sb.catid and sb.scatid = %s",
+                            sql_table('plug_multiple_categories_sub'),
+                            sql_table('category'),
+                            sql_table('blog'),
+                            $id
+                        )
+                    );
                 }
                 if ($past !== '+') {
                     $change = '<strong>Sb.</strong>';
@@ -2007,11 +2127,24 @@ class NP_Analyze extends NucleusPlugin
                     $ids = substr($q2, 0, -1);
                     $ot = explode(',', $ids);
                     $que1 .= '?' . $ot[0];
-                    $re = sql_query('SELECT tagname FROM ' . sql_table('plugin_multitags') . ' WHERE tagid in (' . $ids . ')');
+                    $re = sql_query(
+                        sprintf(
+                            "SELECT tagname FROM %s WHERE tagid in (%s)",
+                            sql_table('plugin_multitags'),
+                            $ids
+                        )
+                    );
                     while ($row = mysql_fetch_assoc($re)) $apname .= $row['tagname'] . '+';
                     $apname = substr($apname, 0, -1);
                     if ($apname) {
-                        $que = quickQuery("SELECT odef as result FROM " . sql_table('plugin') . ", " . sql_table('plugin_option_desc') . " WHERE opid = pid and oname = 'tag_query' and pfile = 'NP_MultiTags'");
+                        $que = quickQuery(
+                            sprintf(
+                                "SELECT odef as result FROM %s, %s"
+                                . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
+                                sql_table('plugin'),
+                                sql_table('plugin_option_desc')
+                            )
+                        );
                     }
                     switch ($CONF['URLMode']) {
                         case 'normal':
