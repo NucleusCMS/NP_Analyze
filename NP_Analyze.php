@@ -96,10 +96,10 @@ class NP_Analyze extends NucleusPlugin
         if ($this->getOption('alz_quickmenu') !== 'yes') {
             return;
         }
-        if (!($member->isLoggedIn())) {
+        if (!$member->isLoggedIn()) {
             return;
         }
-        if (!($this->loginMember() == 1 || $member->isAdmin())) {
+        if ($this->loginMember() != 1 && !$member->isAdmin()) {
             return;
         }
         array_push(
@@ -827,7 +827,11 @@ class NP_Analyze extends NucleusPlugin
         $catid = (int)$catid;
         $itemid = (int)$itemid;
         $m5 = (int)$m5;
-        $qdate = (!($m2 == 1 || $m2 == 3)) ? date("Y-m") : date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01')));
+        if ($m2 == 1 || $m2 == 3) {
+            $qdate = date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01')));
+        } else {
+            $qdate = date("Y-m");
+        }
         switch (TRUE) {
             case ($m1 === 'tr'):
                 $m1a = 'td';
@@ -874,7 +878,7 @@ class NP_Analyze extends NucleusPlugin
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 === 'li' || $cat == 2 || $cat == 3)) {
+                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
                         echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
@@ -886,7 +890,7 @@ class NP_Analyze extends NucleusPlugin
                             }
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
-                    if (!($cat == 1 || $cat == 3)) {
+                    if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['aphit1']) . '</' . $m1a . '>';
                     }
                     echo '
@@ -908,7 +912,7 @@ class NP_Analyze extends NucleusPlugin
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 === 'li' || $cat == 2 || $cat == 3)) {
+                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
                         echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
@@ -923,7 +927,7 @@ class NP_Analyze extends NucleusPlugin
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     echo '<' . $m1a . ' class="analyze_body"> ' . htmlspecialchars($row['apqquery']) . '</' . $m1a . '>';
-                    if (!($cat == 1 || $cat == 3)) {
+                    if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['apqvisit']) . '</' . $m1a . '>';
                     }
                     echo '
@@ -951,7 +955,7 @@ class NP_Analyze extends NucleusPlugin
                     $data2 = ($m4) ? $apid2[0] : $apid[0];
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 === 'li' || $cat == 2 || $cat == 3)) {
+                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
                         echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
@@ -964,7 +968,7 @@ class NP_Analyze extends NucleusPlugin
                             }
                             echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
-                    if (!($cat == 1 || $cat == 3)) {
+                    if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['appvisit']) . '</' . $m1a . '>';
                     }
                     echo '
@@ -989,13 +993,13 @@ class NP_Analyze extends NucleusPlugin
                     }
                     echo '
 <' . $m1 . ' class="analyze_top">';
-                    if (!($m1 === 'li' || $cat == 2 || $cat == 3)) {
+                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
                         echo '
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
                     echo '
 <' . $m1a . ' class="analyze_body"><a href="' . $ref_l . '">' . $link . '</a></' . $m1a . '>';
-                    if (!($cat == 1 || $cat == 3)) {
+                    if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['arvisit']) . '</' . $m1a . '>';
                     }
                     echo '
@@ -1012,10 +1016,10 @@ class NP_Analyze extends NucleusPlugin
     function DirectLink($itemid = '')
     {
         global $CONF, $member;
-        if (!($member->isLoggedIn())) {
+        if (!$member->isLoggedIn()) {
             return;
         }
-        if (!($this->loginMember() == 1 || $member->isAdmin())) {
+        if ($this->loginMember() != 1 && !$member->isAdmin()) {
             return;
         }
         $tp0 = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=i?' . $itemid . '&amp;past=' . date("Y-m") . '"><img src="' . $CONF['AdminURL'] . 'documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
