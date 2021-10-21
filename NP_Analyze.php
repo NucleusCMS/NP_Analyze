@@ -39,12 +39,10 @@ class NP_Analyze extends NucleusPlugin
 
     function supportsFeature($what)
     {
-        switch ($what) {
-            case 'SqlTablePrefix':
-                return 1;
-            default:
-                return 0;
+        if ($what !== 'SqlTablePrefix') {
+            return 0;
         }
+        return 1;
     }
 
     function getEventList()
@@ -822,39 +820,32 @@ class NP_Analyze extends NucleusPlugin
                         $skin = $id;
                     }
                 }
-                switch ($skin) {
-                    case 'text/html':
-                        if ($manager->pluginInstalled('NP_MultiTags')) {
-                            $que =  quickQuery(
-                                sprintf(
-                                    "SELECT odef as result FROM %s, %s"
-                                    . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
-                                    sql_table('plugin'),
-                                    sql_table('plugin_option_desc')
-                                )
-                            );
-                            switch ($CONF['URLMode']) {
-                                case 'normal':
-                                    $tag = $_GET[$que];
-                                    break;
-                                default:
-                                    $lq = explode('/' . $que . '/', $_SERVER['REQUEST_URI']);
-                                    $lr = explode('/', $lq[1]);
-                                    $ls = explode('?', $lr[0]);
-                                    $tag = $ls[0];
-                            }
+                if ($skin !== 'text/html') {
+                    $alid = 'r?';
+                } else {
+                    if ($manager->pluginInstalled('NP_MultiTags')) {
+                        $que = quickQuery(
+                            sprintf(
+                                "SELECT odef as result FROM %s, %s"
+                                . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
+                                sql_table('plugin'),
+                                sql_table('plugin_option_desc')
+                            )
+                        );
+                        if ($CONF['URLMode'] === 'normal') {
+                            $tag = $_GET[$que];
+                        } else {
+                            $lq = explode('/' . $que . '/', $_SERVER['REQUEST_URI']);
+                            $lr = explode('/', $lq[1]);
+                            $ls = explode('?', $lr[0]);
+                            $tag = $ls[0];
                         }
-                        switch ($tag) {
-                            case '':
-                                $alid = 'b?' . $blogid . '?' . $_SERVER['REQUEST_URI'];
-                                break;
-                            default:
-                                $alid = 'mt?' . $blogid . '?' . $tag;
-                        }
-                        break;
-                    default:
-                        $alid = 'r?';
-                        break;
+                    }
+                    if ($tag == '') {
+                        $alid = 'b?' . $blogid . '?' . $_SERVER['REQUEST_URI'];
+                    } else {
+                        $alid = 'mt?' . $blogid . '?' . $tag;
+                    }
                 }
         }
         $alip = @gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -923,15 +914,12 @@ class NP_Analyze extends NucleusPlugin
                 }
                 $enco = _CHARSET;
                 $s_encode = 'EUC-JP, SJIS, UTF-8, JIS, ASCII';
-                switch ($alref) {
-                    case "GoogleIMG":
-                        $al_f = "Google";
-                        break;
-                    case "Yahoo!kids":
-                        $al_f = "Yahoo!";
-                        break;
-                    default:
-                        $al_f = $alref;
+                if ($alref === "GoogleIMG") {
+                    $al_f = "Google";
+                } elseif ($alref === "Yahoo!kids") {
+                    $al_f = "Yahoo!";
+                } else {
+                    $al_f = $alref;
                 }
                 switch ($al_f) {
                     case "Google":
@@ -1134,40 +1122,36 @@ class NP_Analyze extends NucleusPlugin
                         )
                     );
                     $ro1 = mysql_num_rows($ro);
-                    switch (TRUE) {
-                        case (!$arovisit):
-                            break;
-                        case ($ro1):
-                            while ($resr = mysql_fetch_assoc($ro)) {
-                                $arohit0 = $resr['arohit'] + $arohit;
-                                $arovisit0 = $resr['arovisit'] + $arovisit;
-                                sql_query(
-                                    sprintf(
-                                        "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
-                                        . " WHERE LEFT(arodate, 7) = '%s-%s' and aroengine = '%s' LIMIT 1",
-                                        sql_table('plugin_analyze_robot'),
-                                        $arohit0,
-                                        $arovisit0,
-                                        $adate,
-                                        $t1y,
-                                        $t1m,
-                                        $aroengine
-                                    )
-                                );
-                            }
-                            mysql_free_result($ro);
-                            break;
-                        default:
-                            sql_query(
-                                sprintf(
-                                    "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s')",
-                                    sql_table('plugin_analyze_robot'),
-                                    $aroengine,
-                                    $adate,
-                                    $arohit,
-                                    $arovisit
-                                )
-                            );
+                    if (!$arovisit) {
+                        continue;
+                    }
+                    if (!$ro1) {
+                        sql_query(
+                            sprintf(
+                                "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s')",
+                                sql_table('plugin_analyze_robot'),
+                                $aroengine,
+                                $adate,
+                                $arohit,
+                                $arovisit
+                            )
+                        );
+                        continue;
+                    }
+                    while ($resr = mysql_fetch_assoc($ro)) {
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
+                                . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
+                                sql_table('plugin_analyze_robot'),
+                                $resr['arohit'] + $arohit,
+                                $resr['arovisit'] + $arovisit,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $aroengine
+                            )
+                        );
                     }
                 }
 
@@ -1205,11 +1189,8 @@ class NP_Analyze extends NucleusPlugin
                             $t1m
                         )
                     );
-                    $roa1 = mysql_num_rows($roa);
-                    switch (TRUE) {
-                        case (!$arovisit):
-                            break;
-                        case ($roa1):
+                    if ($arovisit) {
+                        if (mysql_num_rows($roa)) {
                             while ($resr = mysql_fetch_assoc($roa)) {
                                 $arohit0 = $resr['arohit'] + $rss_gr;
                                 $arovisit0 = $resr['arovisit'] + $arovisit;
@@ -1226,9 +1207,7 @@ class NP_Analyze extends NucleusPlugin
                                     )
                                 );
                             }
-                            mysql_free_result($roa);
-                            break;
-                        default:
+                        } else {
                             sql_query(
                                 sprintf(
                                     "INSERT INTO %s VALUES ('XML-RSS', '%s', '%s', '%s')",
@@ -1238,6 +1217,7 @@ class NP_Analyze extends NucleusPlugin
                                     $arovisit
                                 )
                             );
+                        }
                     }
                 }
 
@@ -1311,12 +1291,12 @@ class NP_Analyze extends NucleusPlugin
             $qdate = date("Y-m");
         }
         switch (TRUE) {
-            case ($m1 === 'tr'):
-                $m1a = 'td';
-                break;
             case (!$m1):
                 $m1 = 'div';
                 $m1a = 'span';
+                break;
+            case ($m1 === 'tr'):
+                $m1a = 'td';
                 break;
             default:
                 $m1a = 'span';
@@ -1334,24 +1314,25 @@ class NP_Analyze extends NucleusPlugin
                 //			echo $this->Countting($id, $cat);
                 break;
             case ($type === 'hit'):
-                switch (TRUE) {
-                    case ($m4):
-                        sql_query(
-                            sprintf(
-                                "CREATE TEMPORARY TABLE %s as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3), '?', 1) as apid0, apid, aphit1, apdate"
-                                . " FROM %s WHERE apid LIKE '%%i?%%'",
-                                sql_table('t_table'),
-                                sql_table('plugin_analyze_page')
-                            )
-                        );
-                        $q1 = " left join " . sql_table('item') . " on inumber = apid0";
-                    case ($m4 === 'b'):
-                        $q2 = "' and iblog = '" . $blogid;
-                        break;
-                    case ($m4 === 'c'):
-                        $q2 = "' and icat = '" . $catid;
+                if ($m4) {
+                    sql_query(
+                        sprintf(
+                            "CREATE TEMPORARY TABLE %s as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3),'?',1) as apid0,apid,aphit1,apdate"
+                            . " FROM %s WHERE apid LIKE '%%i?%%'",
+                            sql_table('t_table'),
+                            sql_table('plugin_analyze_page')
+                        )
+                    );
+                    $q1 = " left join " . sql_table('item') . " on inumber = apid0";
                 }
-                $table = ($m4) ? 't_table' : 'plugin_analyze_page';
+                if ($m4 === 'b') {
+                    $q2 = "' and iblog = '" . $blogid;
+                } elseif ($m4 === 'c') {
+                    $q2 = "' and icat = '" . $catid;
+                } else {
+                    $q2 = '';
+                }
+                $table = $m4 ? 't_table' : 'plugin_analyze_page';
                 $query = sprintf(
                     "SELECT apid, aphit1 FROM %s%s WHERE LEFT(apdate, 7) = '%s",
                     sql_table($table),
@@ -1373,12 +1354,11 @@ class NP_Analyze extends NucleusPlugin
 <' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
                     }
                     echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
-                    switch (TRUE) {
-                        case ($m2 > 1):
-                            if ($apid[0] === 'i') {
-                                $dr = $this->DirectLink($apid[1]);
-                            }
-                            echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
+                    if ($m2 > 1) {
+                        if ($apid[0] === 'i') {
+                            $dr = $this->DirectLink($apid[1]);
+                        }
+                        echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['aphit1']) . '</' . $m1a . '>';
@@ -1459,12 +1439,11 @@ class NP_Analyze extends NucleusPlugin
                     }
                     echo '
 <' . $m1a . ' class="analyze_body">' . $data1 . '</' . $m1a . '>';
-                    switch (TRUE) {
-                        case ($m2 > 1):
-                            if ($data2 === 'i') {
-                                $dr = $this->DirectLink($apid[1]);
-                            }
-                            echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
+                    if ($m2 > 1) {
+                        if ($data2 === 'i') {
+                            $dr = $this->DirectLink($apid[1]);
+                        }
+                        echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     if ($cat != 1 && $cat != 3) {
                         echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['appvisit']) . '</' . $m1a . '>';
@@ -1705,15 +1684,14 @@ class NP_Analyze extends NucleusPlugin
         sql_query("TRUNCATE TABLE " . $tem);
         $i = 0;
         $k = 0;
+        $c_temp = array();
         foreach ($lines as $line) {
-            switch (TRUE) {
-                case ($i < $ct):
-                    $c_temp[$k] .= "(" . $line . "),";
-                    $i++;
-                    break;
-                default:
-                    $i = 0;
-                    $k++;
+            if ($i >= $ct) {
+                $i = 0;
+                $k++;
+            } else {
+                $c_temp[$k] .= "(" . $line . "),";
+                $i++;
             }
         }
         for ($j = 0; $j <= $k; $j++) {
@@ -1735,105 +1713,116 @@ class NP_Analyze extends NucleusPlugin
             $id = 'total';
         }
         $today_c = " as result FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '')";
-        switch ($id) {
-            case 'all':
-                $today_v = mysql_num_rows(
-                    sql_query(
-                        sprintf(
-                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
-                            $today_c
-                        )
-                    )
-                );
-                $total_v = quickQuery(
+        if ($id === 'all') {
+            $today_v = mysql_num_rows(
+                sql_query(
                     sprintf(
-                        "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
-                        sql_table('plugin_analyze_hit')
+                        "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                        $today_c
                     )
-                );
-                $yday = quickQuery(
-                    sprintf(
-                        "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-                $s0 = explode('/', $this->getOption('alz_counter'));
-                return $s0[0] . number_format($total_v + $today_v) . $s0[1] . number_format($today_v) . $s0[2] . number_format($yday);
-                break;
-            case 'total':
-                $today_v = mysql_num_rows(
-                    sql_query(
-                        sprintf(
-                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
-                            $today_c)
-                    )
-                );
-                $total_v = quickQuery(
-                    sprintf(
-                        "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-                return ($total_v + $today_v);
-            case 'total2':
-                $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
-                $total_v1 = quickQuery(
-                    sprintf(
-                        "SELECT ahhit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-                return ($total_v1 + $today_v1);
-            case 'today':
-                $today_v = mysql_num_rows(
-                    sql_query(
-                        sprintf(
-                            "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
-                            $today_c)
-                    )
-                );
-                return ($today_v);
-            case 'today2':
-                $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
-                return $today_v1;
-            case 'yesterday':
-                return quickQuery(
-                    sprintf(
-                        "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-            case 'yesterday2':
-                return quickQuery(
-                    sprintf(
-                        "SELECT ahhit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-            default:
-                switch ($cat) {
-                    case '2':
-                        $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
-                        $week_v1 = quickQuery(
-                            sprintf(
-                                "SELECT SUM(ahhit) as result FROM %s WHERE ahdate > %s",
-                                sql_table('plugin_analyze_hit'),
-                                mysqldate($aldate - 86400 * $id)
-                            )
-                        );
-                        return ($week_v1 + $today_v1);
-                    default:
-                        $today_v = mysql_num_rows(sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip"));
-                        $week_v = quickQuery(
-                            sprintf(
-                                "SELECT SUM(ahvisit) as result FROM %s WHERE ahdate > %s",
-                                sql_table('plugin_analyze_hit'),
-                                mysqldate($aldate - 86400 * $id)
-                            )
-                        );
-                        return ($week_v + $today_v);
-                }
+                )
+            );
+            $total_v = quickQuery(
+                sprintf(
+                    "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+            $yday = quickQuery(
+                sprintf(
+                    "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+            $s0 = explode('/', $this->getOption('alz_counter'));
+            return $s0[0] . number_format($total_v + $today_v) . $s0[1] . number_format($today_v) . $s0[2] . number_format($yday);
         }
+
+        if ($id === 'total') {
+            $today_v = mysql_num_rows(
+                sql_query(
+                    sprintf(
+                        "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                        $today_c)
+                )
+            );
+            $total_v = quickQuery(
+                sprintf(
+                    "SELECT ahvisit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+            return ($total_v + $today_v);
+        }
+
+        if ($id === 'total2') {
+            $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
+            $total_v1 = quickQuery(
+                sprintf(
+                    "SELECT ahhit as result FROM %s WHERE ahdate = '2000-01-01' ORDER BY null LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+            return ($total_v1 + $today_v1);
+        }
+
+        if ($id === 'today') {
+            $today_v = mysql_num_rows(
+                sql_query(
+                    sprintf(
+                        "SELECT COUNT(allog)%s GROUP BY alip ORDER BY null",
+                        $today_c)
+                )
+            );
+            return ($today_v);
+        }
+
+        if ('today2' === $id) {
+            $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
+            return $today_v1;
+        }
+
+        if ($id === 'yesterday') {
+            return quickQuery(
+                sprintf(
+                    "SELECT ahvisit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+        }
+
+        if ($id === 'yesterday2') {
+            return quickQuery(
+                sprintf(
+                    "SELECT ahhit as result FROM %s WHERE ahdate != '2000-01-01' ORDER BY ahdate DESC LIMIT 1",
+                    sql_table('plugin_analyze_hit')
+                )
+            );
+        }
+
+        if ($cat == 2) {
+            $today_v1 = mysql_num_rows(sql_query("SELECT allog" . $today_c));
+            $week_v1 = quickQuery(
+                sprintf(
+                    "SELECT SUM(ahhit) as result FROM %s WHERE ahdate > %s",
+                    sql_table('plugin_analyze_hit'),
+                    mysqldate($aldate - 86400 * $id)
+                )
+            );
+            return ($week_v1 + $today_v1);
+        }
+
+        $week_v = quickQuery(
+            sprintf(
+                "SELECT SUM(ahvisit) as result FROM %s WHERE ahdate > %s",
+                sql_table('plugin_analyze_hit'),
+                mysqldate($aldate - 86400 * $id)
+            )
+        );
+        $today_v = mysql_num_rows(
+            sql_query("SELECT COUNT(allog)" . $today_c . " GROUP BY alip")
+        );
+        return ($week_v + $today_v);
     }
 
     function oName($apname = '', $acount = '')
@@ -1846,12 +1835,14 @@ class NP_Analyze extends NucleusPlugin
         if (!$acount) {
             $acount = ($ac) ? $ac : 18;
         }
-        switch ($ref_a[0]) {
-            case 'http:':
-                $apname1 = mb_strimwidth($apname, 0, $acount, '..');
-                break;
-            default:
-                $apname1 = (_CHARSET === 'EUC-JP') ? mb_strimwidth($apname, 0, $acount, '..', euc) : mb_strimwidth($apname, 0, $acount, '..', utf8);
+        if ($ref_a[0] === 'http:') {
+            $apname1 = mb_strimwidth($apname, 0, $acount, '..');
+        } else {
+            if (_CHARSET === 'EUC-JP') {
+                $apname1 = mb_strimwidth($apname, 0, $acount, '..', euc);
+            } else {
+                $apname1 = mb_strimwidth($apname, 0, $acount, '..', utf8);
+            }
         }
         //			$apname1 = htmlspecialchars(substr($apname, 0, $acount));
         //htmlspecialchars(mb_substr($apname, 0, $acount));
@@ -1868,24 +1859,20 @@ class NP_Analyze extends NucleusPlugin
         if ($que == 1) {
             $jd = '';
         }
-        switch (TRUE) {
-            case ($hd):
-                if ($bd) {
-                    $que1 = $bd;
-                }
-                $chan = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=' . $que1 . '&amp;past=' . $past . '"><img src="documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
+        if ($hd) {
+            if ($bd) {
+                $que1 = $bd;
+            }
+            $chan = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=' . $que1 . '&amp;past=' . $past . '"><img src="documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
         }
-        switch (TRUE) {
-            case ($this->getOption('alz_temp') === 'no' && ($past || ($_GET['group']) === 'page')):
-                break;
-            default:
-                if (!$past && ($_GET['group']) === 'page') {
-                    $past = date("Y-m");
-                }
-                $chan .= ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que1 . $jd . '&amp;jd=' . $past . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . '"></a> ' . $other;
-                if ($que && $que != 1) {
-                    $chan .= $que . ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . ' : ' . $que . '"></a>';
-                }
+        if ($this->getOption('alz_temp') !== 'no' || (!$past && $_GET['group'] !== 'page')) {
+            if (!$past && ($_GET['group']) === 'page') {
+                $past = date("Y-m");
+            }
+            $chan .= ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que1 . $jd . '&amp;jd=' . $past . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . '"></a> ' . $other;
+            if ($que && $que != 1) {
+                $chan .= $que . ' <a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=' . $past . '&amp;query=' . $que . '"><img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="' . _NP_ANALYZE_EXTRACT . ' : ' . $que . '"></a>';
+            }
         }
         return $chan;
     }
@@ -1929,211 +1916,255 @@ class NP_Analyze extends NucleusPlugin
         if ($this->getOption('alz_oname') !== 'no') {
             $oname_j = $this->oName($other, 10);
         }
-        switch ($select) {
-            case 'i':
-                if (is_numeric($id)) {
-                    $apname = quickQuery(
+        if ($select === 'i') {
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT ititle as result FROM %s WHERE inumber = %s",
+                        sql_table('item'),
+                        $id
+                    )
+                );
+            }
+            if ($past !== '+') {
+                $change = '<strong>I.</strong>';
+            }
+            $change .= ($apname) ? '<a href="' . $url . createItemLink((int)$id) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'b') {
+            if ($past !== '+') {
+                $change = '<strong>B.</strong>';
+            }
+            if (is_numeric($id)) {
+                $change .= ($apname1) ? '<a href="' . $url . createBlogidLink($id) . '" title="' . $apname1 . ' ' . $other . '">' . $this->oName($apname1, $c) . '</a>' . $oname_j : $id . ' ' . _NP_ANALYZE_DEL;
+            }
+            return $change . $this->ChangeData($past, $que1, '?', 1, $hd, 'b?' . $id);
+        }
+
+        if ($select === 'c') {
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT cname as result FROM %s WHERE catid = %s",
+                        sql_table('category'),
+                        $id
+                    )
+                );
+            }
+            if (is_numeric($id)) {
+                $bid = quickQuery(
+                    sprintf(
+                        "SELECT cblog as result FROM %s WHERE catid = %s",
+                        sql_table('category'),
+                        $id
+                    )
+                );
+            }
+            if ($past !== '+') {
+                $change = '<strong>C.</strong>';
+            }
+            $change .= ($apname) ? '<a href="' . $url . createBlogidLink($bid, array('catid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'l') {
+            if ($past !== '+') {
+                $change = '<strong>AL.</strong>';
+            }
+            if ($id) {
+                $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink((int)$id) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+            }
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'a') {
+            if ($past !== '+') {
+                $change = '<strong>Ar.</strong>';
+            }
+            if ($id || $asa[0]) {
+                $change .= ($apname1) ? '<a href="' . $url . createArchiveLink((int)$id, $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
+            }
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'r') {
+            if ($past !== '+') {
+                $change = '<strong>R.</strong>';
+            }
+            return $change . 'XML-RSS ' . $id . $this->ChangeData($past, $que1);
+        }
+
+        if ($select === 'm') {
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT mname as result FROM %s WHERE mnumber = %s",
+                        sql_table('member'),
+                        $id
+                    )
+                );
+            }
+            if ($past !== '+') {
+                $change = '<strong>M.</strong>';
+            }
+            $change .= ($apname) ? '<a href="' . $url . createMemberLink((int)$id) . '" title="Member Page : ' . $apname . '">' . $apname . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'im') {
+            return '<strong>IMG.</strong>[Popup window]' . $this->ChangeData($past, $que1);
+        }
+
+        if ($select === 's') {
+            $change = '<strong>S.';
+            $change .= (is_numeric($id)) ? '<a href="' . $url . '?query=' . $other . '&amp;blogid=' . $id . '" title="' . _NP_ANALYZE_SEARCH_PAGE . ' : ' . $apname1 . '">' . _NP_ANALYZE_SEARCH . '</a>' : _NP_ANALYZE_SEARCH_PAGE;
+            return $change . '</strong>' . $this->ChangeData($past, $que1, '?') . $other;
+        }
+
+        if ($select === 'en') {
+            if ($other == 1) {
+                return $id . $this->ChangeData($past, $que1);
+            }
+            if ($other != 1) {
+                return '<strong>[' . $id . ']</strong> ' . $this->ChangeData($past, $que1, '', $que);
+            }
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT ititle as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                        sql_table('item'),
+                        sql_table('comment'),
+                        $id
+                    )
+                );
+            }
+            if (is_numeric($id)) {
+                $aid = quickQuery(
+                    sprintf(
+                        "SELECT inumber as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                        sql_table('item'),
+                        sql_table('comment'),
+                        $id
+                    )
+                );
+            }
+            $change = '<strong>Co.</strong>';
+            $change .= ($aid) ? '<a href="' . $url . createItemLink($aid) . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->oName($other, 10) : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?');
+        }
+
+        if ($select === 'co') {
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT ititle as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                        sql_table('item'),
+                        sql_table('comment'),
+                        $id
+                    )
+                );
+            }
+            if (is_numeric($id)) {
+                $aid = quickQuery(
+                    sprintf(
+                        "SELECT inumber as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
+                        sql_table('item'),
+                        sql_table('comment'),
+                        $id
+                    )
+                );
+            }
+            $change = '<strong>Co.</strong>';
+            $change .= ($aid) ? '<a href="' . $url . createItemLink($aid) . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->oName($other, 10) : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?');
+        }
+
+        if ($select === 'sb') {
+            if (is_numeric($id)) {
+                $apname = quickQuery(
+                    sprintf(
+                        "SELECT sname as result FROM %s WHERE scatid = %s",
+                        sql_table('plug_multiple_categories_sub'),
+                        $id
+                    )
+                );
+            }
+            if (is_numeric($id)) {
+                $bid = quickQuery(
+                    sprintf(
+                        "SELECT bnumber as result FROM %s as sb, %s as c, %s as b"
+                        . " WHERE c.cblog=b.bnumber and c.catid=sb.catid and sb.scatid = %s",
+                        sql_table('plug_multiple_categories_sub'),
+                        sql_table('category'),
+                        sql_table('blog'),
+                        $id
+                    )
+                );
+            }
+            if ($past !== '+') {
+                $change = '<strong>Sb.</strong>';
+            }
+            $change .= ($bid) ? '<a href="' . $url . createBlogidLink($bid, array('subcatid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
+            return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
+        }
+
+        if ($select === 'mt') {
+            if ($other) {
+                $other = str_replace(' ', '+', $other);
+                $ot = explode('+', $other);
+                foreach ($ot as $q1) $q2 .= preg_replace('/^([0-9]*).*/', '\\1', $q1) . ',';
+                $ids = substr($q2, 0, -1);
+                $ot = explode(',', $ids);
+                $que1 .= '?' . $ot[0];
+                $re = sql_query(
+                    sprintf(
+                        "SELECT tagname FROM %s WHERE tagid in (%s)",
+                        sql_table('plugin_multitags'),
+                        $ids
+                    )
+                );
+                while ($row = mysql_fetch_assoc($re)) $apname .= $row['tagname'] . '+';
+                $apname = substr($apname, 0, -1);
+                if ($apname) {
+                    $que = quickQuery(
                         sprintf(
-                            "SELECT ititle as result FROM %s WHERE inumber = %s",
-                            sql_table('item'),
-                            $id
+                            "SELECT odef as result FROM %s, %s"
+                            . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
+                            sql_table('plugin'),
+                            sql_table('plugin_option_desc')
                         )
                     );
                 }
-                if ($past !== '+') {
-                    $change = '<strong>I.</strong>';
+                if ($CONF['URLMode'] === 'normal') {
+                    $id2 = '&amp;' . $que . '=' . $other;
+                } else {
+                    $id2 = '/' . $que . '/' . $other;
                 }
-                $change .= ($apname) ? '<a href="' . $url . createItemLink((int)$id) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'b':
-                if ($past !== '+') {
-                    $change = '<strong>B.</strong>';
-                }
-                if (is_numeric($id)) {
-                    $change .= ($apname1) ? '<a href="' . $url . createBlogidLink($id) . '" title="' . $apname1 . ' ' . $other . '">' . $this->oName($apname1, $c) . '</a>' . $oname_j : $id . ' ' . _NP_ANALYZE_DEL;
-                }
-                return $change . $this->ChangeData($past, $que1, '?', 1, $hd, 'b?' . $id);
-            case 'c':
-                if (is_numeric($id)) {
-                    $apname = quickQuery(
-                        sprintf(
-                            "SELECT cname as result FROM %s WHERE catid = %s",
-                            sql_table('category'),
-                            $id
-                        )
-                    );
-                }
-                if (is_numeric($id)) {
-                    $bid = quickQuery(
-                        sprintf(
-                            "SELECT cblog as result FROM %s WHERE catid = %s",
-                            sql_table('category'),
-                            $id
-                        )
-                    );
-                }
-                if ($past !== '+') {
-                    $change = '<strong>C.</strong>';
-                }
-                $change .= ($apname) ? '<a href="' . $url . createBlogidLink($bid, array('catid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'l':
-                if ($past !== '+') {
-                    $change = '<strong>AL.</strong>';
-                }
-                if ($id) {
-                    $change .= ($apname1) ? '<a href="' . $url . createArchiveListLink((int)$id) . '" title="' . $apname1 . '">' . $this->oName($apname1, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
-                }
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'a':
-                if ($past !== '+') {
-                    $change = '<strong>Ar.</strong>';
-                }
-                if ($id || $asa[0]) {
-                    $change .= ($apname1) ? '<a href="' . $url . createArchiveLink((int)$id, $asa[0]) . '" title="' . $asa[0] . ' ' . $apname1 . '">' . $this->oName($asa[0] . ' ' . $apname1, $c) . '</a>' : $asa[0] . $id . ' ' . _NP_ANALYZE_DEL;
-                }
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'r':
-                if ($past !== '+') {
-                    $change = '<strong>R.</strong>';
-                }
-                return $change . 'XML-RSS ' . $id . $this->ChangeData($past, $que1);
-            case 'm':
-                if (is_numeric($id)) {
-                    $apname = quickQuery(
-                        sprintf(
-                            "SELECT mname as result FROM %s WHERE mnumber = %s",
-                            sql_table('member'),
-                            $id
-                        )
-                    );
-                }
-                if ($past !== '+') {
-                    $change = '<strong>M.</strong>';
-                }
-                $change .= ($apname) ? '<a href="' . $url . createMemberLink((int)$id) . '" title="Member Page : ' . $apname . '">' . $apname . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'im':
-                return '<strong>IMG.</strong>[Popup window]' . $this->ChangeData($past, $que1);
-            case 's':
-                $change = '<strong>S.';
-                $change .= (is_numeric($id)) ? '<a href="' . $url . '?query=' . $other . '&amp;blogid=' . $id . '" title="' . _NP_ANALYZE_SEARCH_PAGE . ' : ' . $apname1 . '">' . _NP_ANALYZE_SEARCH . '</a>' : _NP_ANALYZE_SEARCH_PAGE;
-                return $change . '</strong>' . $this->ChangeData($past, $que1, '?') . $other;
-            case 'en':
-                if ($other == 1) {
-                    return $id . $this->ChangeData($past, $que1);
-                }
-                if ($other != 1) {
-                    return '<strong>[' . $id . ']</strong> ' . $this->ChangeData($past, $que1, '', $que);
-                }
-            case 'co':
-                if (is_numeric($id)) {
-                    $apname = quickQuery(
-                        sprintf(
-                            "SELECT ititle as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
-                            sql_table('item'),
-                            sql_table('comment'),
-                            $id
-                        )
-                    );
-                }
-                if (is_numeric($id)) {
-                    $aid = quickQuery(
-                        sprintf(
-                            "SELECT inumber as result FROM %s, %s WHERE inumber = citem and cnumber = %s",
-                            sql_table('item'),
-                            sql_table('comment'),
-                            $id
-                        )
-                    );
-                }
-                $change = '<strong>Co.</strong>';
-                $change .= ($aid) ? '<a href="' . $url . createItemLink($aid) . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->oName($other, 10) : $id . ' ' . _NP_ANALYZE_DEL;
-                return $change . $this->ChangeData($past, $que1, '?');
-            case 'sb':
-                if (is_numeric($id)) {
-                    $apname = quickQuery(
-                        sprintf(
-                            "SELECT sname as result FROM %s WHERE scatid = %s",
-                            sql_table('plug_multiple_categories_sub'),
-                            $id
-                        )
-                    );
-                }
-                if (is_numeric($id)) {
-                    $bid = quickQuery(
-                        sprintf(
-                            "SELECT bnumber as result FROM %s as sb, %s as c, %s as b"
-                            . " WHERE c.cblog=b.bnumber and c.catid=sb.catid and sb.scatid = %s",
-                            sql_table('plug_multiple_categories_sub'),
-                            sql_table('category'),
-                            sql_table('blog'),
-                            $id
-                        )
-                    );
-                }
-                if ($past !== '+') {
-                    $change = '<strong>Sb.</strong>';
-                }
-                $change .= ($bid) ? '<a href="' . $url . createBlogidLink($bid, array('subcatid' => $id)) . '" title="' . $apname . '">' . $this->oName($apname, $c) . '</a>' : $id . ' ' . _NP_ANALYZE_DEL;
-                return $change . $this->ChangeData($past, $que1, '?', 0, $hd);
-            case 'mt':
-                if ($other) {
-                    $other = str_replace(' ', '+', $other);
-                    $ot = explode('+', $other);
-                    foreach ($ot as $q1) $q2 .= preg_replace('/^([0-9]*).*/', '\\1', $q1) . ',';
-                    $ids = substr($q2, 0, -1);
-                    $ot = explode(',', $ids);
-                    $que1 .= '?' . $ot[0];
-                    $re = sql_query(
-                        sprintf(
-                            "SELECT tagname FROM %s WHERE tagid in (%s)",
-                            sql_table('plugin_multitags'),
-                            $ids
-                        )
-                    );
-                    while ($row = mysql_fetch_assoc($re)) $apname .= $row['tagname'] . '+';
-                    $apname = substr($apname, 0, -1);
-                    if ($apname) {
-                        $que = quickQuery(
-                            sprintf(
-                                "SELECT odef as result FROM %s, %s"
-                                . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
-                                sql_table('plugin'),
-                                sql_table('plugin_option_desc')
-                            )
-                        );
-                    }
-                    switch ($CONF['URLMode']) {
-                        case 'normal':
-                            $id2 = '&amp;' . $que . '=' . $other;
-                            break;
-                        default:
-                            $id2 = '/' . $que . '/' . $other;
-                    }
-                }
-                if ($past !== '+') {
-                    $change = '<strong>MT.</strong>';
-                }
-                $change .= ($apname) ? '<a href="' . $url . createBlogidLink($id) . $id2 . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->ChangeData($past, $que1) : $other;
-                return $change;
-            case 'e':
-                return '<strong>E.</strong>' . _NP_ANALYZE_ERROR_PAGE . ' ' . $id . $this->ChangeData($past, $que1);
+            }
+            if ($past !== '+') {
+                $change = '<strong>MT.</strong>';
+            }
+            $change .= ($apname) ? '<a href="' . $url . createBlogidLink($id) . $id2 . '" title="' . $apname . '">' . $this->oName($apname) . '</a> ' . $this->ChangeData($past, $que1) : $other;
+            return $change;
+        }
+
+        if ($select === 'e') {
+            return '<strong>E.</strong>' . _NP_ANALYZE_ERROR_PAGE . ' ' . $id . $this->ChangeData($past, $que1);
+        }
+
+        if (!$select) {
+            return;
+        }
+        $select = htmlspecialchars($select);
+        switch (TRUE) {
+            case (!$id):
+                return '<a href="' . $select . '" title="' . $select . '">' . $this->oName($select, $c) . '</a>' . $this->ChangeData($past, $que1);
+            case ($id == 1):
+                return $select . $this->ChangeData($past, $que1);
             default:
-                if (!$select) {
-                    return;
-                }
-                $select = htmlspecialchars($select);
-                switch (TRUE) {
-                    case ($id == 1):
-                        return $select . $this->ChangeData($past, $que1);
-                        break;
-                    case (!$id):
-                        return '<a href="' . $select . '" title="' . $select . '">' . $this->oName($select, $c) . '</a>' . $this->ChangeData($past, $que1);
-                        break;
-                    default:
-                        return '<a href="' . $select . '" title="' . $select . '">' . $this->oName($select . '?' . $id, $c) . '</a>' . $this->ChangeData($past, $que1);
-                }
+                return '<a href="' . $select . '" title="' . $select . '">' . $this->oName($select . '?' . $id, $c) . '</a>' . $this->ChangeData($past, $que1);
         }
     }
 }
