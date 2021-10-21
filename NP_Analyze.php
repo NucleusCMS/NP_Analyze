@@ -121,7 +121,16 @@ class NP_Analyze extends NucleusPlugin
         $aldate = date('Y-m-d H:i:s', $comment['timestamp']);
         $alip = addslashes($comment['host']);
         $alreferer = 'i?' . (int)$comment['itemid'] . '?';
-        sql_query('INSERT INTO ' . sql_table('plugin_analyze_log') . " (alid, aldate, alip, alreferer) VALUES ('$alid', '$aldate', '$alip', '$alreferer')");
+        sql_query(
+            sprintf(
+                "INSERT INTO %s (alid, aldate, alip, alreferer) VALUES ('%s', '%s', '%s', '%s')",
+                sql_table('plugin_analyze_log'),
+                $alid,
+                $aldate,
+                $alip,
+                $alreferer
+            )
+        );
         return;
     }
 
@@ -129,12 +138,31 @@ class NP_Analyze extends NucleusPlugin
     {
         if ($data['plugid'] == $this->GetID()) {
             if ($this->getOption(alz_rss) === 'yes') {
-                sql_query("DELETE FROM " . sql_table('plugin_analyze_ng') . " WHERE antitle = 'rss'");
+                sql_query(
+                    sprintf(
+                        "DELETE FROM %s WHERE antitle = 'rss'",
+                        sql_table('plugin_analyze_ng')
+                    )
+                );
             } else {
-                $rss1 = quickQuery("SELECT anid as result FROM " . sql_table('plugin_analyze_ng') . " WHERE antitle = 'rss'");
-                if (!$rss1) sql_query("INSERT INTO " . sql_table('plugin_analyze_ng') . " (anid, antitle, anip) VALUES ('1', 'rss', '')");
+                $rss1 = quickQuery(
+                    sprintf(
+                        "SELECT anid as result FROM %s WHERE antitle = 'rss'",
+                        sql_table('plugin_analyze_ng')
+                    )
+                );
+                if (!$rss1) {
+                    sql_query(
+                        sprintf(
+                            "INSERT INTO %s (anid, antitle, anip) VALUES ('1', 'rss', '')",
+                            sql_table('plugin_analyze_ng')
+                        )
+                    );
+                }
             }
-            if ($this->getOption(alz_temp) === 'no') sql_query('TRUNCATE TABLE ' . sql_table('plugin_analyze_temp'));
+            if ($this->getOption(alz_temp) === 'no') {
+                sql_query('TRUNCATE TABLE ' . sql_table('plugin_analyze_temp'));
+            }
         }
     }
 
@@ -176,22 +204,57 @@ class NP_Analyze extends NucleusPlugin
 
     function UpPage($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE p_group as SELECT alid, COUNT(allog) as count FROM " . $t_table . " GROUP BY alip, alid ORDER BY null");
-        $page_groups = sql_query("SELECT alid, COUNT(count) as count FROM p_group GROUP BY alid ORDER BY count DESC");
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE p_group as SELECT alid, COUNT(allog) as count"
+                . " FROM %s GROUP BY alip, alid ORDER BY null",
+                $t_table
+            )
+        );
+        $page_groups = sql_query(
+            "SELECT alid, COUNT(count) as count FROM p_group GROUP BY alid ORDER BY count DESC"
+        );
         $i = 1;
         while ($row2 = mysql_fetch_assoc($page_groups)) {
             $apid = $row2['alid'];
-            $aphit = quickQuery("SELECT COUNT(allog) as result FROM " . $t_table . " WHERE alid = '" . $row2['alid'] . "' GROUP BY alid ORDER BY null LIMIT 1");
+            $aphit = quickQuery(
+                sprintf(
+                    "SELECT COUNT(allog) as result FROM %s WHERE alid='%s' GROUP BY alid ORDER BY null LIMIT 1",
+                    $t_table,
+                    $row2['alid']
+                )
+            );
             $aphit1 = $row2['count'];
             $aphit2 = $i;
-            $tp = sql_query("SELECT * FROM " . sql_table('plugin_analyze_page') . " WHERE LEFT(apdate, 7) = '" . $t1y . "-" . $t1m . "' and apid = '" . $apid . "' LIMIT 1");
+            $tp = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(apdate, 7) = '%s-%s' and apid = '%s' LIMIT 1",
+                    sql_table('plugin_analyze_page'),
+                    $t1y,
+                    $t1m,
+                    $apid
+                )
+            );
             $lo = mysql_num_rows($tp);
             switch (TRUE) {
                 case ($lo):
                     while ($resp = mysql_fetch_assoc($tp)) {
                         $aphits = $resp['aphit'] + $aphit;
                         $aphits1 = $resp['aphit1'] + $aphit1;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_page') . " SET aphit = " . $aphits . ", aphit1 = " . $aphits1 . ", aphit2 = " . $aphit2 . ", apdate = '" . $adate . "' WHERE LEFT(apdate, 7) = '" . $t1y . "-" . $t1m . "' and apid = '" . $apid . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET aphit=%s, aphit1=%s, aphit2=%s, apdate='%s'"
+                                . " WHERE LEFT(apdate, 7)='%s-%s' AND apid='%s'",
+                                sql_table('plugin_analyze_page'),
+                                $aphits,
+                                $aphits1,
+                                $aphit2,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $apid
+                            )
+                        );
                     }
                     mysql_free_result($tp);
                     break;
@@ -202,120 +265,302 @@ class NP_Analyze extends NucleusPlugin
         }
         if ($i_page) {
             $i_page = substr($i_page, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_page') . " VALUES " . $i_page);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s",
+                    sql_table('plugin_analyze_page'),
+                    $i_page
+                )
+            );
         }
         return;
     }
 
     function UpPagePattern($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE pagep as SELECT alid, alip, alreferer, COUNT(allog) as count FROM " . $t_table . " WHERE NOT(LEFT(alreferer, 3) = 'en?' or alreferer LIKE 'http%' or alreferer = '') GROUP BY alid, alreferer, alip ORDER BY null");
-        $pagez = "SELECT alid, SUM(count) as count, COUNT(alip) as count1, alreferer FROM pagep GROUP BY alid, alreferer ORDER BY null";
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE pagep as SELECT alid, alip, alreferer, COUNT(allog) as count"
+                . " FROM %s"
+                . " WHERE NOT(LEFT(alreferer, 3) = 'en?' or alreferer LIKE 'http%%' or alreferer = '')"
+                . " GROUP BY alid, alreferer, alip ORDER BY null",
+                $t_table
+            )
+        );
+        $pagez = "SELECT alid, SUM(count) as count, COUNT(alip) as count1, alreferer"
+            . " FROM pagep GROUP BY alid, alreferer ORDER BY null";
         $pagep = sql_query($pagez);
         while ($row3 = mysql_fetch_assoc($pagep)) {
             $appid = $row3['alid'];
             $apppage = $row3['alreferer'];
             $apphit = $row3['count'];
             $appvisit = $row3['count1'];
-            $tp1 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_page_pattern') . " WHERE LEFT(appdate, 7) = '" . $t1y . "-" . $t1m . "' and appid = '" . $appid . "' and apppage = '" . $apppage . "' LIMIT 1");
+            $tp1 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s' LIMIT 1",
+                    sql_table('plugin_analyze_page_pattern'),
+                    $t1y,
+                    $t1m,
+                    $appid,
+                    $apppage
+                )
+            );
             $lo1 = mysql_num_rows($tp1);
             switch (TRUE) {
                 case ($lo1):
                     while ($respp = mysql_fetch_assoc($tp1)) {
                         $apphit5 = $respp['apphit'] + $apphit;
                         $appvisit5 = $respp['appvisit'] + $appvisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_page_pattern') . " SET apphit = " . $apphit5 . ", appvisit = " . $appvisit5 . ", appdate = '" . $adate . "' WHERE LEFT(appdate, 7) = '" . $t1y . "-" . $t1m . "' and appid = '" . $appid . "' and apppage = '" . $apppage . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET apphit=%s, appvisit=%s, appdate='%s'"
+                                . " WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s'",
+                                sql_table('plugin_analyze_page_pattern'),
+                                $apphit5,
+                                $appvisit5,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $appid,
+                                $apppage
+                            )
+                        );
                     }
                     mysql_free_result($tp1);
                     break;
                 default:
-                    $i_pagep .= "('" . $appid . "', '" . $adate . "', '" . $apppage . "', '" . $apphit . "', '" . $appvisit . "'),";
+                    $i_pagep .= sprintf(
+                        "('%s', '%s', '%s', '%s', '%s'),",
+                        $appid,
+                        $adate,
+                        $apppage,
+                        $apphit,
+                        $appvisit
+                    );
             }
         }
         if ($i_pagep) {
             $i_pagep = substr($i_pagep, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_page_pattern') . " VALUES " . $i_pagep);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s",
+                    sql_table('plugin_analyze_page_pattern'),
+                    $i_pagep
+                )
+            );
         }
         return;
     }
 
     function UpPageQuery($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE pq_group as SELECT alid, alword, COUNT(alip) as count FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' GROUP BY alip, alid, alword ORDER BY null");
-        $page_que = sql_query("SELECT alid, alword, COUNT(alid) as count FROM pq_group GROUP BY alid, alword ORDER BY null");
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE pq_group as SELECT alid, alword, COUNT(alip) as count"
+                . " FROM %s WHERE LEFT(alreferer, 3) = 'en?' GROUP BY alip, alid, alword ORDER BY null",
+                $t_table
+            )
+        );
+        $page_que = sql_query(
+            "SELECT alid, alword, COUNT(alid) as count FROM pq_group GROUP BY alid, alword ORDER BY null"
+        );
         while ($row4 = mysql_fetch_assoc($page_que)) {
             $apqid = $row4['alid'];
             $apqquery = $row4['alword'];
-            $apqhit = quickQuery("SELECT COUNT(alip) as result FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' and alid = '" . $apqid . "' and alword = '" . $apqquery . "' GROUP BY alid, alword");
+            $apqhit = quickQuery(
+                sprintf(
+                    "SELECT COUNT(alip) as result FROM %s"
+                    . " WHERE LEFT(alreferer, 3)='en?' and alid='%s' and alword='%s' GROUP BY alid, alword",
+                    $t_table,
+                    $apqid,
+                    $apqquery
+                )
+            );
             $apqvisit = $row4['count'];
-            $tp4 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_page_query') . " WHERE LEFT(apqdate, 7) = '" . $t1y . "-" . $t1m . "' and apqid = '" . $apqid . "' and apqquery = '" . $apqquery . "' LIMIT 1");
+            $tp4 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(apqdate, 7)='%s-%s' and apqid='%s' and apqquery='%s' LIMIT 1",
+                    sql_table('plugin_analyze_page_query'),
+                    $t1y,
+                    $t1m,
+                    $apqid,
+                    $apqquery
+                )
+            );
             $lo4 = mysql_num_rows($tp4);
             switch (TRUE) {
                 case ($lo4):
                     while ($resp4 = mysql_fetch_assoc($tp4)) {
                         $apqhit2 = $resp4['apqhit'] + $apqhit;
                         $apqvisit2 = $resp4['apqvisit'] + $apqvisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_page_query') . " SET apqhit = " . $apqhit2 . ", apqvisit = " . $apqvisit2 . ", apqdate = '" . $adate . "' WHERE LEFT(apqdate, 7) = '" . $t1y . "-" . $t1m . "' and apqid = '" . $apqid . "' and apqquery = '" . $apqquery . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET apqhit=%s, apqvisit=%s, apqdate='%s'"
+                                . " WHERE LEFT(apqdate, 7) = '%s-%s' and apqid = '%s' and apqquery = '%s'",
+                                sql_table('plugin_analyze_page_query'),
+                                $apqhit2,
+                                $apqvisit2,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $apqid,
+                                $apqquery
+                            )
+                        );
                     }
                     mysql_free_result($tp4);
                     break;
                 default:
-                    $i_pageq .= "('" . $apqid . "', '" . $adate . "', '" . $apqquery . "', '" . $apqhit . "', '" . $apqvisit . "'),";
+                    $i_pageq .= sprintf(
+                        "('%s', '%s', '%s', '%s', '%s'),",
+                        $apqid,
+                        $adate,
+                        $apqquery,
+                        $apqhit,
+                        $apqvisit
+                    );
             }
         }
         if ($i_pageq) {
             $i_pageq = substr($i_pageq, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_page_query') . " VALUES " . $i_pageq);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_page_query')
+                    , $i_pageq
+                )
+            );
         }
         return;
     }
 
     function UpQuery($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE q_group as SELECT alword, COUNT(alip) as count FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' GROUP BY alip, alword ORDER BY null");
-        $page_que2 = sql_query("SELECT alword, COUNT(count) as count FROM q_group GROUP BY alword ORDER BY null");
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE q_group as SELECT alword, COUNT(alip) as count"
+                . " FROM %s WHERE LEFT(alreferer, 3)='en?' GROUP BY alip, alword ORDER BY null",
+                $t_table
+            )
+        );
+        $page_que2 = sql_query(
+            "SELECT alword, COUNT(count) as count FROM q_group GROUP BY alword ORDER BY null"
+        );
         while ($row5 = mysql_fetch_assoc($page_que2)) {
-            $aqhit = quickQuery("SELECT COUNT(alip) as result FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' and alword = '" . $row5['alword'] . "' GROUP BY alword");
+            $aqhit = quickQuery(
+                sprintf(
+                    "SELECT COUNT(alip) as result FROM %s"
+                    . " WHERE LEFT(alreferer, 3)='en?' and alword='%s' GROUP BY alword",
+                    $t_table,
+                    $row5['alword']
+                )
+            );
             $aqvisit = $row5['count'];
             $aqquery = $row5['alword'];
-            $tp5 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_query') . " WHERE LEFT(aqdate, 7) = '" . $t1y . "-" . $t1m . "' and aqquery = '" . $aqquery . "' LIMIT 1");
+            $tp5 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(aqdate, 7)='%s-%s' and aqquery='%s' LIMIT 1",
+                    sql_table('plugin_analyze_query'),
+                    $t1y,
+                    $t1m,
+                    $aqquery
+                )
+            );
             $lo5 = mysql_num_rows($tp5);
             switch (TRUE) {
                 case ($lo5):
                     while ($resp5 = mysql_fetch_assoc($tp5)) {
                         $aqhit1 = $resp5['aqhit'] + $aqhit;
                         $aqvisit1 = $resp5['aqvisit'] + $aqvisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_query') . " SET aqhit = " . $aqhit1 . ", aqvisit = " . $aqvisit1 . ", aqdate = '" . $adate . "' WHERE LEFT(aqdate, 7) = '" . $t1y . "-" . $t1m . "' and aqquery = '" . $aqquery . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET aqhit=%s, aqvisit=%s, aqdate='%s'"
+                                . " WHERE LEFT(aqdate, 7)='%s-%s' and aqquery='%s'",
+                                sql_table('plugin_analyze_query'),
+                                $aqhit1,
+                                $aqvisit1,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $aqquery
+                            )
+                        );
                     }
                     mysql_free_result($tp5);
                     break;
                 default:
-                    $i_query .= "('" . $aqquery . "', '" . $adate . "', '" . $aqhit . "', '" . $aqvisit . "'),";
+                    $i_query .= sprintf(
+                        "('%s', '%s', '%s', '%s'),",
+                        $aqquery,
+                        $adate,
+                        $aqhit,
+                        $aqvisit
+                    );
             }
         }
         if ($i_query) {
-            $i_query = substr($i_query, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_query') . " VALUES " . $i_query);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s",
+                    sql_table('plugin_analyze_query'),
+                    substr($i_query, 0, -1)
+                )
+            );
         }
         return;
     }
 
     function UpEngine($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE e_group as SELECT alreferer, COUNT(alip) as count FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' GROUP BY alip, alreferer ORDER BY null");
-        $page_engine = sql_query("SELECT alreferer, COUNT(count) as count FROM e_group GROUP BY alreferer ORDER BY null");
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE e_group as SELECT alreferer, COUNT(alip) as count"
+                . " FROM %s"
+                . " WHERE LEFT(alreferer, 3)='en?' GROUP BY alip, alreferer ORDER BY null",
+                $t_table
+            )
+        );
+        $page_engine = sql_query(
+            "SELECT alreferer, COUNT(count) as count FROM e_group GROUP BY alreferer ORDER BY null"
+        );
         while ($row6 = mysql_fetch_assoc($page_engine)) {
             $aevisit = $row6['count'];
-            $aehit = quickQuery("SELECT COUNT(alip) as result FROM " . $t_table . " WHERE LEFT(alreferer, 3) = 'en?' and alreferer = '" . $row6['alreferer'] . "' GROUP BY alreferer ORDER BY null");
+            $aehit = quickQuery(
+                sprintf(
+                    "SELECT COUNT(alip) as result FROM %s"
+                    . " WHERE LEFT(alreferer, 3)='en?' and alreferer='%s' GROUP BY alreferer ORDER BY null",
+                    $t_table,
+                    $row6['alreferer']
+                )
+            );
             $aeengine = $row6['alreferer'];
-            $tp6 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_engine') . " WHERE LEFT(aedate, 7) = '" . $t1y . "-" . $t1m . "' and aeengine = '" . $aeengine . "' LIMIT 1");
+            $tp6 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(aedate, 7)='%s-%s' and aeengine='%s' LIMIT 1",
+                    sql_table('plugin_analyze_engine'),
+                    $t1y,
+                    $t1m,
+                    $aeengine
+                )
+            );
             $lo6 = mysql_num_rows($tp6);
             switch (TRUE) {
                 case ($lo6):
                     while ($resp6 = mysql_fetch_assoc($tp6)) {
                         $aehit1 = $resp6['aehit'] + $aehit;
                         $aevisit1 = $resp6['aevisit'] + $aevisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_engine') . " SET aehit = " . $aehit1 . ", aevisit = " . $aevisit1 . ", aedate = '" . $adate . "' WHERE LEFT(aedate, 7) = '" . $t1y . "-" . $t1m . "' and aeengine = '" . $aeengine . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET aehit=%s, aevisit=%s, aedate='%s'"
+                                . " WHERE LEFT(aedate, 7)='%s-%s' and aeengine='%s'",
+                                sql_table('plugin_analyze_engine'),
+                                $aehit1,
+                                $aevisit1,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $aeengine
+                            )
+                        );
                     }
                     mysql_free_result($tp6);
                     break;
@@ -325,27 +570,68 @@ class NP_Analyze extends NucleusPlugin
         }
         if ($i_engine) {
             $i_engine = substr($i_engine, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_engine') . " VALUES " . $i_engine);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s",
+                    sql_table('plugin_analyze_engine'),
+                    $i_engine
+                )
+            );
         }
         return;
     }
 
     function UpReferer($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE r_group as SELECT alreferer, COUNT(alip) as count FROM " . $t_table . " WHERE LEFT(alreferer, 4) = 'http' GROUP BY alip, alreferer ORDER BY null");
-        $p_referer = sql_query("SELECT alreferer, COUNT(count) as count FROM r_group GROUP BY alreferer ORDER BY null");
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE r_group as SELECT alreferer, COUNT(alip) as count"
+                . " FROM %s WHERE LEFT(alreferer, 4)='http' GROUP BY alip, alreferer ORDER BY null",
+                $t_table
+            )
+        );
+        $p_referer = sql_query(
+            "SELECT alreferer, COUNT(count) as count FROM r_group GROUP BY alreferer ORDER BY null"
+        );
         while ($row7 = mysql_fetch_assoc($p_referer)) {
-            $arhit = quickQuery("SELECT COUNT(alip) as result FROM " . $t_table . " WHERE LEFT(alreferer, 4) = 'http' and alreferer = '" . $row7['alreferer'] . "' GROUP BY alreferer ORDER BY null");
+            $arhit = quickQuery(
+                sprintf(
+                    "SELECT COUNT(alip) as result FROM %s"
+                    . " WHERE LEFT(alreferer, 4)='http' and alreferer='%s' GROUP BY alreferer ORDER BY null",
+                    $t_table,
+                    $row7['alreferer']
+                )
+            );
             $arvisit = $row7['count'];
             $arreferer = $row7['alreferer'];
-            $tp7 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_referer') . " WHERE LEFT(ardate, 7) = '" . $t1y . "-" . $t1m . "' and arreferer = '" . $arreferer . "' LIMIT 1");
+            $tp7 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s' LIMIT 1",
+                    sql_table('plugin_analyze_referer'),
+                    $t1y,
+                    $t1m,
+                    $arreferer
+                )
+            );
             $lo7 = mysql_num_rows($tp7);
             switch (TRUE) {
                 case ($lo7):
                     while ($resp7 = mysql_fetch_assoc($tp7)) {
                         $arhit1 = $resp7['arhit'] + $arhit;
                         $arvisit1 = $resp7['arvisit'] + $arvisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_referer') . " SET arhit = " . $arhit1 . ", arvisit = " . $arvisit1 . ", ardate = '" . $adate . "' WHERE LEFT(ardate, 7) = '" . $t1y . "-" . $t1m . "' and arreferer = '" . $arreferer . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET arhit = %s, arvisit = %s, ardate = '%s'"
+                                . " WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s'",
+                                sql_table('plugin_analyze_referer'),
+                                $arhit1,
+                                $arvisit1,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $arreferer
+                            )
+                        );
                     }
                     mysql_free_result($tp7);
                     break;
@@ -355,28 +641,66 @@ class NP_Analyze extends NucleusPlugin
         }
         if ($i_referer) {
             $i_referer = substr($i_referer, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_referer') . " VALUES " . $i_referer);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_referer'),
+                    $i_referer
+                )
+            );
         }
         return;
     }
 
     function UpHost($t_table = '', $t1y = '', $t1m = '', $adate = '')
     {
-        sql_query("CREATE TEMPORARY TABLE h_group as SELECT CASE SUBSTRING_INDEX(alip, '.', -1) WHEN 'com' THEN SUBSTRING_INDEX(alip, '.', -2) WHEN 'net' THEN SUBSTRING_INDEX(alip, '.', -2) ELSE SUBSTRING_INDEX(alip, '.', -3) END as alip1, COUNT(allog) as count FROM " . $t_table . " GROUP BY alip ORDER BY null");
-        $p_hos = "SELECT alip1, COUNT(count) as count, SUM(count) as count1 FROM h_group GROUP BY alip1 ORDER BY null";
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE h_group as SELECT"
+                . " CASE SUBSTRING_INDEX(alip, '.', -1)"
+                . " WHEN 'com' THEN SUBSTRING_INDEX(alip, '.', -2)"
+                . " WHEN 'net' THEN SUBSTRING_INDEX(alip, '.', -2)"
+                . " ELSE SUBSTRING_INDEX(alip, '.', -3)"
+                . " END as alip1,"
+                . " COUNT(allog) as count"
+                . " FROM %s GROUP BY alip ORDER BY null",
+                $t_table
+            )
+        );
+        $p_hos = "SELECT alip1, COUNT(count) as count, SUM(count) as count1"
+            . " FROM h_group GROUP BY alip1 ORDER BY null";
         $p_host = sql_query($p_hos);
         while ($row8 = mysql_fetch_assoc($p_host)) {
             $ahhhit = $row8['count1'];
             $ahvisit = $row8['count'];
             $ahhost = $row8['alip1'];
-            $tp8 = sql_query("SELECT * FROM " . sql_table('plugin_analyze_host') . " WHERE LEFT(ahdate, 7) = '" . $t1y . "-" . $t1m . "' and ahhost = '" . $ahhost . "' LIMIT 1");
+            $tp8 = sql_query(
+                sprintf(
+                    "SELECT * FROM %s WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s' LIMIT 1",
+                    sql_table('plugin_analyze_host'),
+                    $t1y,
+                    $t1m,
+                    $ahhost
+                )
+            );
             $lo8 = mysql_num_rows($tp8);
             switch (TRUE) {
                 case ($lo8):
                     while ($resp8 = mysql_fetch_assoc($tp8)) {
                         $ahhhit1 = $resp8['ahhit'] + $ahhhit;
                         $ahvisit1 = $resp8['ahvisit'] + $ahvisit;
-                        sql_query("UPDATE " . sql_table('plugin_analyze_host') . " SET ahhit = " . $ahhhit1 . ", ahvisit = " . $ahvisit1 . ", ahdate = '" . $adate . "' WHERE LEFT(ahdate, 7) = '" . $t1y . "-" . $t1m . "' and ahhost = '" . $ahhost . "'");
+                        sql_query(
+                            sprintf(
+                                "UPDATE %s SET ahhit = %s, ahvisit = %s, ahdate = '%s'"
+                                . " WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s'",
+                                sql_table('plugin_analyze_host'),
+                                $ahhhit1,
+                                $ahvisit1,
+                                $adate,
+                                $t1y,
+                                $t1m,
+                                $ahhost
+                            )
+                        );
                     }
                     mysql_free_result($tp8);
                     break;
@@ -386,7 +710,13 @@ class NP_Analyze extends NucleusPlugin
         }
         if ($i_host) {
             $i_host = substr($i_host, 0, -1);
-            sql_query("INSERT INTO " . sql_table('plugin_analyze_host') . " VALUES " . $i_host);
+            sql_query(
+                sprintf(
+                    "INSERT INTO %s VALUES %s",
+                    sql_table('plugin_analyze_host'),
+                    $i_host
+                )
+            );
         }
         return;
     }
