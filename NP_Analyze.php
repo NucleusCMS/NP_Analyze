@@ -114,19 +114,14 @@ class NP_Analyze extends NucleusPlugin
             return;
         }
         $comment = $data['comment'];
-        $commentid = $data['commentid'];
-        $alid = 'co?' . (int)$commentid . '?' . addslashes($comment['user']);
-        $aldate = date('Y-m-d H:i:s', $comment['timestamp']);
-        $alip = addslashes($comment['host']);
-        $alreferer = 'i?' . (int)$comment['itemid'] . '?';
         sql_query(
             sprintf(
                 "INSERT INTO %s (alid, aldate, alip, alreferer) VALUES ('%s', '%s', '%s', '%s')",
                 sql_table('plugin_analyze_log'),
-                $alid,
-                $aldate,
-                $alip,
-                $alreferer
+                'co?' . (int)$data['commentid'] . '?' . addslashes($comment['user']),
+                date('Y-m-d H:i:s', $comment['timestamp']),
+                addslashes($comment['host']),
+                'i?' . (int)$comment['itemid'] . '?'
             )
         );
         return;
@@ -134,48 +129,49 @@ class NP_Analyze extends NucleusPlugin
 
     function event_PostPluginOptionsUpdate(&$data)
     {
-        if ($data['plugid'] == $this->GetID()) {
-            if ($this->getOption(alz_rss) === 'yes') {
+        if ($data['plugid'] != $this->GetID()) {
+            return;
+        }
+
+        if ($this->getOption(alz_rss) === 'yes') {
+            sql_query(
+                sprintf(
+                    "DELETE FROM %s WHERE antitle = 'rss'",
+                    sql_table('plugin_analyze_ng')
+                )
+            );
+        } else {
+            $rs = quickQuery(
+                sprintf(
+                    "SELECT anid as result FROM %s WHERE antitle = 'rss'",
+                    sql_table('plugin_analyze_ng')
+                )
+            );
+            if (!$rs) {
                 sql_query(
                     sprintf(
-                        "DELETE FROM %s WHERE antitle = 'rss'",
+                        "INSERT INTO %s (anid, antitle, anip) VALUES ('1', 'rss', '')",
                         sql_table('plugin_analyze_ng')
                     )
                 );
-            } else {
-                $rss1 = quickQuery(
-                    sprintf(
-                        "SELECT anid as result FROM %s WHERE antitle = 'rss'",
-                        sql_table('plugin_analyze_ng')
-                    )
-                );
-                if (!$rss1) {
-                    sql_query(
-                        sprintf(
-                            "INSERT INTO %s (anid, antitle, anip) VALUES ('1', 'rss', '')",
-                            sql_table('plugin_analyze_ng')
-                        )
-                    );
-                }
             }
-            if ($this->getOption(alz_temp) === 'no') {
-                sql_query('TRUNCATE TABLE ' . sql_table('plugin_analyze_temp'));
-            }
+        }
+        if ($this->getOption(alz_temp) === 'no') {
+            sql_query('TRUNCATE TABLE ' . sql_table('plugin_analyze_temp'));
         }
     }
 
     function loginMember()
     {
         global $member;
-        $memberid = $member->getID();
         $logmem = explode('/', $this->getOption('alz_member'));
-        $logmem1 = 0;
+        $i = 0;
         foreach ($logmem as $logm) {
-            if ($memberid == $logm) {
-                $logmem1++;
+            if ($member->getID() == $logm) {
+                $i++;
             }
         }
-        return $logmem1;
+        return $i;
     }
 
     function init()
@@ -209,20 +205,18 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $page_groups = sql_query(
+        $rs = sql_query(
             "SELECT alid, COUNT(count) as count FROM p_group GROUP BY alid ORDER BY count DESC"
         );
         $i = 1;
-        while ($row2 = mysql_fetch_assoc($page_groups)) {
-            $apid = $row2['alid'];
+        while ($row = mysql_fetch_assoc($rs)) {
             $aphit = quickQuery(
                 sprintf(
                     "SELECT COUNT(allog) as result FROM %s WHERE alid='%s' GROUP BY alid ORDER BY null LIMIT 1",
                     $t_table,
-                    $row2['alid']
+                    $row['alid']
                 )
             );
-            $aphit1 = $row2['count'];
             $aphit2 = $i;
             $tp = sql_query(
                 sprintf(
@@ -230,16 +224,16 @@ class NP_Analyze extends NucleusPlugin
                     sql_table('plugin_analyze_page'),
                     $t1y,
                     $t1m,
-                    $apid
+                    $row['alid']
                 )
             );
             if (!mysql_num_rows($tp)) {
                 $i_page .= sprintf(
                     "('%s', '%s', '%s', '%s', '%s'),",
-                    $apid,
+                    $row['alid'],
                     $adate,
                     $aphit,
-                    $aphit1,
+                    $row['count'],
                     $aphit2
                 );
                 $i++;
@@ -247,7 +241,7 @@ class NP_Analyze extends NucleusPlugin
             }
             while ($resp = mysql_fetch_assoc($tp)) {
                 $aphits = $resp['aphit'] + $aphit;
-                $aphits1 = $resp['aphit1'] + $aphit1;
+                $aphits1 = $resp['aphit1'] + $row['count'];
                 sql_query(
                     sprintf(
                         "UPDATE %s SET aphit=%s, aphit1=%s, aphit2=%s, apdate='%s'"
@@ -259,22 +253,22 @@ class NP_Analyze extends NucleusPlugin
                         $adate,
                         $t1y,
                         $t1m,
-                        $apid
+                        $row['alid']
                     )
                 );
             }
             $i++;
         }
-        if ($i_page) {
-            $i_page = substr($i_page, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s",
-                    sql_table('plugin_analyze_page'),
-                    $i_page
-                )
-            );
+        if (!$i_page) {
+            return;
         }
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s",
+                sql_table('plugin_analyze_page'),
+                substr($i_page, 0, -1)
+            )
+        );
         return;
     }
 
@@ -289,26 +283,27 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $pagez = "SELECT alid, SUM(count) as count, COUNT(alip) as count1, alreferer"
-            . " FROM pagep GROUP BY alid, alreferer ORDER BY null";
-        $pagep = sql_query($pagez);
-        while ($row3 = mysql_fetch_assoc($pagep)) {
-            $appid = $row3['alid'];
-            $apppage = $row3['alreferer'];
-            $apphit = $row3['count'];
-            $appvisit = $row3['count1'];
+        $rs = sql_query(
+            "SELECT alid, SUM(count) as count, COUNT(alip) as count1, alreferer"
+            . " FROM pagep GROUP BY alid, alreferer ORDER BY null"
+        );
+        $i_pagep = '';
+        while ($row = mysql_fetch_assoc($rs)) {
             $tp1 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s' LIMIT 1",
                     sql_table('plugin_analyze_page_pattern'),
                     $t1y,
                     $t1m,
-                    $appid,
-                    $apppage
+                    $row['alid'],
+                    $row['alreferer']
                 )
             );
             if (!mysql_num_rows($tp1)) {
-                $i_pagep .= sprintf("('%s', '%s', '%s', '%s', '%s'),", $appid, $adate, $apppage, $apphit, $appvisit);
+                $i_pagep .= sprintf(
+                    "('%s', '%s', '%s', '%s', '%s'),",
+                    $row['alid'], $adate, $row['alreferer'], $row['count'], $row['count1']
+                );
                 continue;
             }
             while ($respp = mysql_fetch_assoc($tp1)) {
@@ -317,28 +312,28 @@ class NP_Analyze extends NucleusPlugin
                         "UPDATE %s SET apphit=%s, appvisit=%s, appdate='%s'"
                         . " WHERE LEFT(appdate, 7)='%s-%s' and appid='%s' and apppage='%s'",
                         sql_table('plugin_analyze_page_pattern'),
-                        $respp['apphit'] + $apphit,
-                        $respp['appvisit'] + $appvisit,
+                        $respp['apphit'] + $row['count'],
+                        $respp['appvisit'] + $row['count1'],
                         $adate,
                         $t1y,
                         $t1m,
-                        $appid,
-                        $apppage
+                        $row['alid'],
+                        $row['alreferer']
                     )
                 );
             }
         }
-        if ($i_pagep) {
-            $i_pagep = substr($i_pagep, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s",
-                    sql_table('plugin_analyze_page_pattern'),
-                    $i_pagep
-                )
-            );
+        if (!$i_pagep) {
+            return;
         }
-        return;
+
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s",
+                sql_table('plugin_analyze_page_pattern'),
+                trim($i_pagep , ',')
+            )
+        );
     }
 
     function UpPageQuery($t_table = '', $t1y = '', $t1m = '', $adate = '')
@@ -350,65 +345,65 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $page_que = sql_query(
+        $rs = sql_query(
             "SELECT alid, alword, COUNT(alid) as count FROM pq_group GROUP BY alid, alword ORDER BY null"
         );
-        while ($row4 = mysql_fetch_assoc($page_que)) {
-            $apqid = $row4['alid'];
-            $apqquery = $row4['alword'];
+        $i_pageq = '';
+        while ($row = mysql_fetch_assoc($rs)) {
             $apqhit = quickQuery(
                 sprintf(
                     "SELECT COUNT(alip) as result FROM %s"
                     . " WHERE LEFT(alreferer, 3)='en?' and alid='%s' and alword='%s' GROUP BY alid, alword",
                     $t_table,
-                    $apqid,
-                    $apqquery
+                    $row['alid'],
+                    $row['alword']
                 )
             );
-            $apqvisit = $row4['count'];
             $tp4 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(apqdate, 7)='%s-%s' and apqid='%s' and apqquery='%s' LIMIT 1",
                     sql_table('plugin_analyze_page_query'),
                     $t1y,
                     $t1m,
-                    $apqid,
-                    $apqquery
+                    $row['alid'],
+                    $row['alword']
                 )
             );
             if (!mysql_num_rows($tp4)) {
-                $i_pageq .= sprintf("('%s', '%s', '%s', '%s', '%s'),", $apqid, $adate, $apqquery, $apqhit, $apqvisit);
+                $i_pageq .= sprintf(
+                    "('%s', '%s', '%s', '%s', '%s'),",
+                    $row['alid'], $adate, $row['alword'], $apqhit, $row['count']
+                );
                 continue;
             }
             while ($resp4 = mysql_fetch_assoc($tp4)) {
-                $apqhit2 = $resp4['apqhit'] + $apqhit;
-                $apqvisit2 = $resp4['apqvisit'] + $apqvisit;
                 sql_query(
                     sprintf(
                         "UPDATE %s SET apqhit=%s, apqvisit=%s, apqdate='%s'"
                         . " WHERE LEFT(apqdate, 7) = '%s-%s' and apqid = '%s' and apqquery = '%s'",
                         sql_table('plugin_analyze_page_query'),
-                        $apqhit2,
-                        $apqvisit2,
+                        $resp4['apqhit'] + $apqhit,
+                        $resp4['apqvisit'] + $row['count'],
                         $adate,
                         $t1y,
                         $t1m,
-                        $apqid,
-                        $apqquery
+                        $row['alid'],
+                        $row['alword']
                     )
                 );
             }
         }
-        if ($i_pageq) {
-            $i_pageq = substr($i_pageq, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_page_query')
-                    , $i_pageq
-                )
-            );
+
+        if (!$i_pageq) {
+            return;
         }
-        return;
+
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_page_query'),
+                substr($i_pageq, 0, -1)
+            )
+        );
     }
 
     function UpQuery($t_table = '', $t1y = '', $t1m = '', $adate = '')
@@ -420,36 +415,37 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $page_que2 = sql_query(
+        $rs = sql_query(
             "SELECT alword, COUNT(count) as count FROM q_group GROUP BY alword ORDER BY null"
         );
-        while ($row5 = mysql_fetch_assoc($page_que2)) {
+        while ($row = mysql_fetch_assoc($rs)) {
             $aqhit = quickQuery(
                 sprintf(
                     "SELECT COUNT(alip) as result FROM %s"
                     . " WHERE LEFT(alreferer, 3)='en?' and alword='%s' GROUP BY alword",
                     $t_table,
-                    $row5['alword']
+                    $row['alword']
                 )
             );
-            $aqvisit = $row5['count'];
-            $aqquery = $row5['alword'];
             $tp5 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(aqdate, 7)='%s-%s' and aqquery='%s' LIMIT 1",
                     sql_table('plugin_analyze_query'),
                     $t1y,
                     $t1m,
-                    $aqquery
+                    $row['alword']
                 )
             );
             if (!mysql_num_rows($tp5)) {
-                $i_query .= sprintf("('%s', '%s', '%s', '%s'),", $aqquery, $adate, $aqhit, $aqvisit);
+                $i_query .= sprintf(
+                    "('%s', '%s', '%s', '%s'),",
+                    $row['alword'], $adate, $aqhit, $row['count']
+                );
                 continue;
             }
             while ($resp5 = mysql_fetch_assoc($tp5)) {
                 $aqhit1 = $resp5['aqhit'] + $aqhit;
-                $aqvisit1 = $resp5['aqvisit'] + $aqvisit;
+                $aqvisit1 = $resp5['aqvisit'] + $row['count'];
                 sql_query(
                     sprintf(
                         "UPDATE %s SET aqhit=%s, aqvisit=%s, aqdate='%s'"
@@ -460,21 +456,21 @@ class NP_Analyze extends NucleusPlugin
                         $adate,
                         $t1y,
                         $t1m,
-                        $aqquery
+                        $row['alword']
                     )
                 );
             }
         }
-        if ($i_query) {
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s",
-                    sql_table('plugin_analyze_query'),
-                    substr($i_query, 0, -1)
-                )
-            );
+        if (!$i_query) {
+            return;
         }
-        return;
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s",
+                sql_table('plugin_analyze_query'),
+                substr($i_query, 0, -1)
+            )
+        );
     }
 
     function UpEngine($t_table = '', $t1y = '', $t1m = '', $adate = '')
@@ -487,36 +483,34 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $page_engine = sql_query(
+        $rs = sql_query(
             "SELECT alreferer, COUNT(count) as count FROM e_group GROUP BY alreferer ORDER BY null"
         );
-        while ($row6 = mysql_fetch_assoc($page_engine)) {
-            $aevisit = $row6['count'];
+        while ($row = mysql_fetch_assoc($rs)) {
             $aehit = quickQuery(
                 sprintf(
                     "SELECT COUNT(alip) as result FROM %s"
                     . " WHERE LEFT(alreferer, 3)='en?' and alreferer='%s' GROUP BY alreferer ORDER BY null",
                     $t_table,
-                    $row6['alreferer']
+                    $row['alreferer']
                 )
             );
-            $aeengine = $row6['alreferer'];
             $tp6 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(aedate, 7)='%s-%s' and aeengine='%s' LIMIT 1",
                     sql_table('plugin_analyze_engine'),
                     $t1y,
                     $t1m,
-                    $aeengine
+                    $row['alreferer']
                 )
             );
             if (!mysql_num_rows($tp6)) {
-                $i_engine .= sprintf("('%s', '%s', '%s', '%s'),", $aeengine, $adate, $aehit, $aevisit);
+                $i_engine .= sprintf("('%s', '%s', '%s', '%s'),", $row['alreferer'], $adate, $aehit, $row['count']);
                 continue;
             }
             while ($resp6 = mysql_fetch_assoc($tp6)) {
                 $aehit1 = $resp6['aehit'] + $aehit;
-                $aevisit1 = $resp6['aevisit'] + $aevisit;
+                $aevisit1 = $resp6['aevisit'] + $row['count'];
                 sql_query(
                     sprintf(
                         "UPDATE %s SET aehit=%s, aevisit=%s, aedate='%s'"
@@ -527,22 +521,21 @@ class NP_Analyze extends NucleusPlugin
                         $adate,
                         $t1y,
                         $t1m,
-                        $aeengine
+                        $row['alreferer']
                     )
                 );
             }
         }
-        if ($i_engine) {
-            $i_engine = substr($i_engine, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s",
-                    sql_table('plugin_analyze_engine'),
-                    $i_engine
-                )
-            );
+        if (!$i_engine) {
+            return;
         }
-        return;
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s",
+                sql_table('plugin_analyze_engine'),
+                substr($i_engine, 0, -1)
+            )
+        );
     }
 
     function UpReferer($t_table = '', $t1y = '', $t1m = '', $adate = '')
@@ -554,61 +547,56 @@ class NP_Analyze extends NucleusPlugin
                 $t_table
             )
         );
-        $p_referer = sql_query(
+        $rs = sql_query(
             "SELECT alreferer, COUNT(count) as count FROM r_group GROUP BY alreferer ORDER BY null"
         );
-        while ($row7 = mysql_fetch_assoc($p_referer)) {
+        while ($row = mysql_fetch_assoc($rs)) {
             $arhit = quickQuery(
                 sprintf(
                     "SELECT COUNT(alip) as result FROM %s"
                     . " WHERE LEFT(alreferer, 4)='http' and alreferer='%s' GROUP BY alreferer ORDER BY null",
                     $t_table,
-                    $row7['alreferer']
+                    $row['alreferer']
                 )
             );
-            $arvisit = $row7['count'];
-            $arreferer = $row7['alreferer'];
             $tp7 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s' LIMIT 1",
                     sql_table('plugin_analyze_referer'),
                     $t1y,
                     $t1m,
-                    $arreferer
+                    $row['alreferer']
                 )
             );
             if (!mysql_num_rows($tp7)) {
-                $i_referer .= sprintf("('%s', '%s', '%s', '%s'),", $arreferer, $adate, $arhit, $arvisit);
+                $i_referer .= sprintf("('%s', '%s', '%s', '%s'),", $row['alreferer'], $adate, $arhit, $row['count']);
                 continue;
             }
             while ($resp7 = mysql_fetch_assoc($tp7)) {
-                $arhit1 = $resp7['arhit'] + $arhit;
-                $arvisit1 = $resp7['arvisit'] + $arvisit;
                 sql_query(
                     sprintf(
                         "UPDATE %s SET arhit = %s, arvisit = %s, ardate = '%s'"
                         . " WHERE LEFT(ardate, 7) = '%s-%s' and arreferer = '%s'",
                         sql_table('plugin_analyze_referer'),
-                        $arhit1,
-                        $arvisit1,
+                        $resp7['arhit'] + $arhit,
+                        $resp7['arvisit'] + $row['count'],
                         $adate,
                         $t1y,
                         $t1m,
-                        $arreferer
+                        $row['alreferer']
                     )
                 );
             }
         }
-        if ($i_referer) {
-            $i_referer = substr($i_referer, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_referer'),
-                    $i_referer
-                )
-            );
+        if (!$i_referer) {
+            return;
         }
-        return;
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s", sql_table('plugin_analyze_referer'),
+                substr($i_referer, 0, -1)
+            )
+        );
     }
 
     function UpHost($t_table = '', $t1y = '', $t1m = '', $adate = '')
@@ -628,53 +616,47 @@ class NP_Analyze extends NucleusPlugin
         );
         $p_hos = "SELECT alip1, COUNT(count) as count, SUM(count) as count1"
             . " FROM h_group GROUP BY alip1 ORDER BY null";
-        $p_host = sql_query($p_hos);
-        while ($row8 = mysql_fetch_assoc($p_host)) {
-            $ahhhit = $row8['count1'];
-            $ahvisit = $row8['count'];
-            $ahhost = $row8['alip1'];
+        $rs = sql_query($p_hos);
+        while ($row = mysql_fetch_assoc($rs)) {
             $tp8 = sql_query(
                 sprintf(
                     "SELECT * FROM %s WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s' LIMIT 1",
                     sql_table('plugin_analyze_host'),
                     $t1y,
                     $t1m,
-                    $ahhost
+                    $row['alip1']
                 )
             );
             if (!mysql_num_rows($tp8)) {
-                $i_host .= sprintf("('%s', '%s', '%s', '%s'),", $ahhost, $adate, $ahhhit, $ahvisit);
+                $i_host .= sprintf("('%s', '%s', '%s', '%s'),", $row['alip1'], $adate, $row['count1'], $row['count']);
                 continue;
             }
             while ($resp8 = mysql_fetch_assoc($tp8)) {
-                $ahhhit1 = $resp8['ahhit'] + $ahhhit;
-                $ahvisit1 = $resp8['ahvisit'] + $ahvisit;
                 sql_query(
                     sprintf(
                         "UPDATE %s SET ahhit = %s, ahvisit = %s, ahdate = '%s'"
                         . " WHERE LEFT(ahdate, 7) = '%s-%s' and ahhost = '%s'",
                         sql_table('plugin_analyze_host'),
-                        $ahhhit1,
-                        $ahvisit1,
+                        $resp8['ahhit'] + $row['count1'],
+                        $resp8['ahvisit'] + $row['count'],
                         $adate,
                         $t1y,
                         $t1m,
-                        $ahhost
+                        $row['alip1']
                     )
                 );
             }
         }
-        if ($i_host) {
-            $i_host = substr($i_host, 0, -1);
-            sql_query(
-                sprintf(
-                    "INSERT INTO %s VALUES %s",
-                    sql_table('plugin_analyze_host'),
-                    $i_host
-                )
-            );
+        if (!$i_host) {
+            return;
         }
-        return;
+        sql_query(
+            sprintf(
+                "INSERT INTO %s VALUES %s",
+                sql_table('plugin_analyze_host'),
+                substr($i_host, 0, -1)
+            )
+        );
     }
 
     function SendMailMonth($t1y = '', $t1m = '')
