@@ -180,12 +180,12 @@ class NP_Analyze extends NucleusPlugin
 
     function init()
     {
-        $language = ereg_replace('[\\|/]', '', getLanguageName());
-        if (file_exists($this->getDirectory() . $language . '.php')) {
-            include_once($this->getDirectory() . $language . '.php');
-        } else {
+        $language = str_replace(array('\\', '/'), '', getLanguageName());
+        if (!is_file($this->getDirectory() . $language . '.php')) {
             include_once($this->getDirectory() . 'english.php');
+            return;
         }
+        include_once($this->getDirectory() . $language . '.php');
     }
 
     function TableExists($tbl_name)
