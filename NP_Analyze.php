@@ -102,13 +102,10 @@ class NP_Analyze extends NucleusPlugin
         if ($this->loginMember() != 1 && !$member->isAdmin()) {
             return;
         }
-        array_push(
-            $data['options'],
-            array(
-                'title' => _NP_ANALYZE_DATA,
-                'url' => $this->getAdminURL(),
-                'tooltip' => _NP_ANALYZE_TITLE
-            )
+        $data['options'][] = array(
+            'title' => _NP_ANALYZE_DATA,
+            'url' => $this->getAdminURL(),
+            'tooltip' => _NP_ANALYZE_TITLE
         );
     }
 
