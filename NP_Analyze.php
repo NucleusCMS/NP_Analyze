@@ -723,7 +723,25 @@ class NP_Analyze extends NucleusPlugin
 
     function SendMailMonth($t1y = '', $t1m = '')
     {
-        $result = sql_query("SELECT LEFT(ahdate, 7) as ahdate, SUM(ahvisit) as ahvisit, SUM(ahhit) as ahhit, SUM(ahlevel1) as ahlevel1, SUM(ahlevel2) as ahlevel2, SUM(ahlevel3) as ahlevel3, SUM(ahlevel4) as ahlevel4, SUM(ahlevel5) as ahlevel5, SUM(ahrobot) as ahrobot FROM " . sql_table('plugin_analyze_hit') . " WHERE LEFT(ahdate, 7) = '" . $t1y . "-" . $t1m . "' GROUP BY ahdate");
+        $result = sql_query(
+            sprintf(
+                "SELECT"
+                . " LEFT(ahdate, 7) as ahdate,"
+                . " SUM(ahvisit) as ahvisit,"
+                . " SUM(ahhit) as ahhit,"
+                . " SUM(ahlevel1) as ahlevel1,"
+                . " SUM(ahlevel2) as ahlevel2,"
+                . " SUM(ahlevel3) as ahlevel3,"
+                . " SUM(ahlevel4) as ahlevel4,"
+                . " SUM(ahlevel5) as ahlevel5,"
+                . " SUM(ahrobot) as ahrobot"
+                . " FROM %s"
+                . " WHERE LEFT(ahdate, 7)='%s-%s' GROUP BY ahdate",
+                sql_table('plugin_analyze_hit'),
+                $t1y,
+                $t1m
+            )
+        );
         while ($row = mysql_fetch_assoc($result)) {
             $me1 = "[Monthly Access]\n\n";
             $me1 .= "Hit : " . number_format($row['ahvisit']) . "\n";
@@ -774,8 +792,18 @@ class NP_Analyze extends NucleusPlugin
         }
         $this->AccessLog($mcsv, $t_table);
         $this->TempChange($mcsv);
-        $t_1s = quickQuery("SELECT DATE_FORMAT(aldate,'%Y-%m-%d') as result FROM $t_table ORDER BY allog ASC LIMIT 1");
-        $h_time = quickQuery("SELECT ahdate as result FROM " . sql_table('plugin_analyze_host') . " ORDER BY ahdate DESC LIMIT 1");
+        $t_1s = quickQuery(
+            sprintf(
+                "SELECT DATE_FORMAT(aldate,'%%Y-%%m-%%d') as result FROM %s ORDER BY allog ASC LIMIT 1",
+                $t_table
+            )
+        );
+        $h_time = quickQuery(
+            sprintf(
+                "SELECT ahdate as result FROM %s ORDER BY ahdate DESC LIMIT 1",
+                sql_table('plugin_analyze_host')
+            )
+        );
         if ($h_time == $t_1s) {
             sql_query("DROP TABLE " . $t_table);
         }
@@ -839,7 +867,14 @@ class NP_Analyze extends NucleusPlugin
                 switch ($skin) {
                     case 'text/html':
                         if ($manager->pluginInstalled('NP_MultiTags')) {
-                            $que =  quickQuery("SELECT odef as result FROM " . sql_table('plugin') . ", " . sql_table('plugin_option_desc') . " WHERE opid = pid and oname = 'tag_query' and pfile = 'NP_MultiTags'");
+                            $que =  quickQuery(
+                                sprintf(
+                                    "SELECT odef as result FROM %s, %s"
+                                    . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
+                                    sql_table('plugin'),
+                                    sql_table('plugin_option_desc')
+                                )
+                            );
                             switch ($CONF['URLMode']) {
                                 case 'normal':
                                     $tag = $_GET[$que];
@@ -872,7 +907,13 @@ class NP_Analyze extends NucleusPlugin
         $t0d = date("d", strtotime($aldate));
         // Referer
         if ($_SERVER['HTTP_REFERER']) {
-            $alref1 = quickQuery("SELECT alid as result FROM " . sql_table('plugin_analyze_log') . " WHERE alip = '" . $alip . "' ORDER BY allog DESC LIMIT 1");
+            $alref1 = quickQuery(
+                sprintf(
+                    "SELECT alid as result FROM %s WHERE alip='%s' ORDER BY allog DESC LIMIT 1",
+                    sql_table('plugin_analyze_log'),
+                    $alip
+                )
+            );
         }
         switch (TRUE) {
             case (!$_SERVER['HTTP_REFERER']):
@@ -979,7 +1020,12 @@ class NP_Analyze extends NucleusPlugin
         }
 
         // Count
-        $time1 = quickQuery("SELECT aldate as result FROM " . sql_table('plugin_analyze_log') . " ORDER BY allog ASC LIMIT 1");
+        $time1 = quickQuery(
+            sprintf(
+                "SELECT aldate as result FROM %s ORDER BY allog ASC LIMIT 1",
+                sql_table('plugin_analyze_log')
+            )
+        );
         $t1y = date("Y", strtotime($time1));
         $t1m = date("m", strtotime($time1));
         $t1d = date("d", strtotime($time1));
@@ -994,11 +1040,21 @@ class NP_Analyze extends NucleusPlugin
                 // plugin_analyze_hit
                 $ip_gri = " FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '') ";
                 $ip_grou = "SELECT alip, COUNT(allog) as count" . $ip_gri . "GROUP BY alip ORDER BY null";
-                sql_query("CREATE TEMPORARY TABLE ipgroup as SELECT alid, COUNT(allog) as count" . $ip_gri . "GROUP BY alip, alid ORDER BY null");
+                sql_query(
+                    sprintf(
+                        "CREATE TEMPORARY TABLE ipgroup as SELECT alid, COUNT(allog) as count %s"
+                        . " GROUP BY alip, alid ORDER BY null",
+                        $ip_gri
+                    )
+                );
                 $ip_gri = "SELECT alip" . $ip_gri;
                 $ahhit = mysql_num_rows(sql_query($ip_gri));
                 $hit_range = explode('/', $this->getOption('alz_hit_range'));
-                $today_h = mysql_num_rows(sql_query("SELECT * FROM " . sql_table('plugin_analyze_log')));
+                $today_h = mysql_num_rows(
+                    sql_query(
+                        "SELECT * FROM " . sql_table('plugin_analyze_log')
+                    )
+                );
                 $robot_t = $today_h - $this->Countting('today2');
                 $ip_group = sql_query($ip_grou);
                 $ahvisit = mysql_num_rows($ip_group);
@@ -1020,14 +1076,40 @@ class NP_Analyze extends NucleusPlugin
                             $ahlevel1++;
                     }
                 }
-                $c_time = quickQuery("SELECT ahdate as result FROM " . sql_table('plugin_analyze_hit') . " ORDER BY ahdate DESC LIMIT 1");
+                $c_time = quickQuery(
+                    sprintf(
+                        "SELECT ahdate as result FROM %s ORDER BY ahdate DESC LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
                 if ($c_time == $adate) {
                     $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
                     return;
                 }
-                sql_query('INSERT INTO ' . sql_table('plugin_analyze_hit') . " (ahdate, ahvisit, ahhit, ahlevel1, ahlevel2, ahlevel3, ahlevel4, ahlevel5, ahrobot) VALUES ('$adate', '$ahvisit', '$ahhit', '$ahlevel1', '$ahlevel2', '$ahlevel3', '$ahlevel4', '$ahlevel5', '$robot_t')");
+                sql_query(
+                    sprintf(
+                        "INSERT INTO %s"
+                        . " (ahdate, ahvisit, ahhit, ahlevel1, ahlevel2, ahlevel3, ahlevel4, ahlevel5, ahrobot)"
+                        . " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+                        sql_table('plugin_analyze_hit'),
+                        $adate,
+                        $ahvisit,
+                        $ahhit,
+                        $ahlevel1,
+                        $ahlevel2,
+                        $ahlevel3,
+                        $ahlevel4,
+                        $ahlevel5,
+                        $robot_t
+                    )
+                );
                 mysql_free_result($ip_group);
-                $result = sql_query("SELECT * FROM " . sql_table('plugin_analyze_hit') . " WHERE ahdate = '2000-01-01' LIMIT 1");
+                $result = sql_query(
+                    sprintf(
+                        "SELECT * FROM %s WHERE ahdate = '2000-01-01' LIMIT 1",
+                        sql_table('plugin_analyze_hit')
+                    )
+                );
                 while ($res = mysql_fetch_assoc($result)) {
                     $ahvisit0 = $res['ahvisit'] + $ahvisit;
                     $ahhit0 = $res['ahhit'] + $ahhit;
@@ -1038,11 +1120,31 @@ class NP_Analyze extends NucleusPlugin
                     $ahlevel50 = $res['ahlevel5'] + $ahlevel5;
                     $ahrobot0 = $res['ahrobot'] + $robot_t;
                 }
-                sql_query("UPDATE " . sql_table('plugin_analyze_hit') . " SET ahvisit = " . $ahvisit0 . ", ahhit = " . $ahhit0 . ", ahlevel1 = " . $ahlevel10 . ", ahlevel2 = " . $ahlevel20 . ", ahlevel3 = " . $ahlevel30 . ", ahlevel4 = " . $ahlevel40 . ", ahlevel5 = " . $ahlevel50 . ", ahrobot = " . $ahrobot0 . " WHERE ahdate = '2000-01-01' LIMIT 1");
+                sql_query(
+                    sprintf(
+                        "UPDATE %s"
+                        . " SET ahvisit=%s,ahhit=%s,ahlevel1=%s,ahlevel2=%s,ahlevel3=%s,ahlevel4=%s,ahlevel5=%s,ahrobot=%s"
+                        . " WHERE ahdate = '2000-01-01' LIMIT 1",
+                        sql_table('plugin_analyze_hit'),
+                        $ahvisit0,
+                        $ahhit0,
+                        $ahlevel10,
+                        $ahlevel20,
+                        $ahlevel30,
+                        $ahlevel40,
+                        $ahlevel50,
+                        $ahrobot0
+                    )
+                );
                 mysql_free_result($result);
 
                 // plugin_analyze_robot Main
-                $ng_gr = sql_query("SELECT anip, antitle FROM " . sql_table('plugin_analyze_ng') . " WHERE antitle != 'rss'");
+                $ng_gr = sql_query(
+                    sprintf(
+                        "SELECT anip, antitle FROM %s WHERE antitle != 'rss'",
+                        sql_table('plugin_analyze_ng')
+                    )
+                );
                 $robo1 = array();
                 while (list($anip, $antitle) = mysql_fetch_row($ng_gr)) {
                     $robo1[$anip] = $antitle;
@@ -1052,13 +1154,27 @@ class NP_Analyze extends NucleusPlugin
                     $arohit = 0;
                     $arovisit = 0;
                     $aroengine = $robo1[1];
-                    $ip_gr = sql_query("SELECT alip, COUNT(allog) as count FROM " . sql_table('plugin_analyze_log') . " WHERE alip LIKE '%" . $robo1[0] . "%' GROUP BY alip ORDER BY null");
+                    $ip_gr = sql_query(
+                        sprintf(
+                            "SELECT alip, COUNT(allog) as count FROM %s WHERE alip LIKE '%%%s%%' GROUP BY alip ORDER BY null",
+                            sql_table('plugin_analyze_log'),
+                            $robo1[0]
+                        )
+                    );
                     while ($row = mysql_fetch_assoc($ip_gr)) {
                         $arohit = $arohit + $row['count'];
                         $arovisit++;
                     }
                     mysql_free_result($ip_gr);
-                    $ro = sql_query("SELECT arohit, arovisit FROM " . sql_table('plugin_analyze_robot') . " WHERE LEFT(arodate, 7) = '" . $t1y . "-" . $t1m . "' and aroengine = '" . $aroengine . "' LIMIT 1");
+                    $ro = sql_query(
+                        sprintf(
+                            "SELECT arohit, arovisit FROM %s WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
+                            sql_table('plugin_analyze_robot'),
+                            $t1y,
+                            $t1m,
+                            $aroengine
+                        )
+                    );
                     $ro1 = mysql_num_rows($ro);
                     switch (TRUE) {
                         case (!$arovisit):
@@ -1067,22 +1183,70 @@ class NP_Analyze extends NucleusPlugin
                             while ($resr = mysql_fetch_assoc($ro)) {
                                 $arohit0 = $resr['arohit'] + $arohit;
                                 $arovisit0 = $resr['arovisit'] + $arovisit;
-                                sql_query("UPDATE " . sql_table('plugin_analyze_robot') . " SET arohit = " . $arohit0 . ", arovisit = " . $arovisit0 . ", arodate = '" . $adate . "' WHERE LEFT(arodate, 7) = '" . $t1y . "-" . $t1m . "' and aroengine = '" . $aroengine . "' LIMIT 1");
+                                sql_query(
+                                    sprintf(
+                                        "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
+                                        . " WHERE LEFT(arodate, 7) = '%s-%s' and aroengine = '%s' LIMIT 1",
+                                        sql_table('plugin_analyze_robot'),
+                                        $arohit0,
+                                        $arovisit0,
+                                        $adate,
+                                        $t1y,
+                                        $t1m,
+                                        $aroengine
+                                    )
+                                );
                             }
                             mysql_free_result($ro);
                             break;
                         default:
-                            sql_query("INSERT INTO " . sql_table('plugin_analyze_robot') . " VALUES ('" . $aroengine . "', '" . $adate . "', '" . $arohit . "', '" . $arovisit . "')");
+                            sql_query(
+                                sprintf(
+                                    "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s')",
+                                    sql_table('plugin_analyze_robot'),
+                                    $aroengine,
+                                    $adate,
+                                    $arohit,
+                                    $arovisit
+                                )
+                            );
                     }
                 }
 
                 // plugin_analyze_robot RSS
-                $rss_g = quickQuery("SELECT antitle as result FROM " . sql_table('plugin_analyze_ng') . " WHERE antitle = 'rss' LIMIT 1");
+                $rss_g = quickQuery(
+                    sprintf(
+                        "SELECT antitle as result FROM %s WHERE antitle = 'rss' LIMIT 1",
+                        sql_table('plugin_analyze_ng')
+                    )
+                );
                 if ($rss_g) {
-                    $rss_gr = quickQuery("SELECT COUNT(allog) as result FROM " . sql_table('plugin_analyze_log') . " WHERE alid = 'r?' GROUP BY alid ORDER BY null");
-                    sql_query("CREATE TEMPORARY TABLE rss_group as SELECT alip, COUNT(allog) as count FROM " . sql_table('plugin_analyze_log') . " WHERE alid = 'r?' GROUP BY alip, alid ORDER BY null");
-                    $arovisit = mysql_num_rows(sql_query("SELECT COUNT(count) as count FROM rss_group GROUP BY alip ORDER BY null"));
-                    $roa = sql_query("SELECT arohit, arovisit FROM " . sql_table('plugin_analyze_robot') . " WHERE LEFT(arodate, 7) = '" . $t1y . "-" . $t1m . "' and aroengine = 'XML-RSS' LIMIT 1");
+                    $rss_gr = quickQuery(
+                        sprintf(
+                            "SELECT COUNT(allog) as result FROM %s WHERE alid = 'r?' GROUP BY alid ORDER BY null",
+                            sql_table('plugin_analyze_log')
+                        )
+                    );
+                    sql_query(
+                        sprintf(
+                            "CREATE TEMPORARY TABLE rss_group as SELECT alip, COUNT(allog) as count"
+                            . " FROM %s WHERE alid = 'r?' GROUP BY alip, alid ORDER BY null",
+                            sql_table('plugin_analyze_log')
+                        )
+                    );
+                    $arovisit = mysql_num_rows(
+                        sql_query(
+                            "SELECT COUNT(count) as count FROM rss_group GROUP BY alip ORDER BY null"
+                        )
+                    );
+                    $roa = sql_query(
+                        sprintf(
+                            "SELECT arohit, arovisit FROM %s WHERE LEFT(arodate, 7)='%s-%s' and aroengine='XML-RSS' LIMIT 1",
+                            sql_table('plugin_analyze_robot'),
+                            $t1y,
+                            $t1m
+                        )
+                    );
                     $roa1 = mysql_num_rows($roa);
                     switch (TRUE) {
                         case (!$arovisit):
@@ -1091,12 +1255,31 @@ class NP_Analyze extends NucleusPlugin
                             while ($resr = mysql_fetch_assoc($roa)) {
                                 $arohit0 = $resr['arohit'] + $rss_gr;
                                 $arovisit0 = $resr['arovisit'] + $arovisit;
-                                sql_query("UPDATE " . sql_table('plugin_analyze_robot') . " SET arohit = " . $arohit0 . ", arovisit = " . $arovisit0 . ", arodate = '" . $adate . "' WHERE LEFT(arodate, 7) = '" . $t1y . "-" . $t1m . "' and aroengine = 'XML-RSS' LIMIT 1");
+                                sql_query(
+                                    sprintf(
+                                        "UPDATE %s SET arohit = %s, arovisit = %s, arodate = '%s'"
+                                        . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='XML-RSS' LIMIT 1",
+                                        sql_table('plugin_analyze_robot'),
+                                        $arohit0,
+                                        $arovisit0,
+                                        $adate,
+                                        $t1y,
+                                        $t1m
+                                    )
+                                );
                             }
                             mysql_free_result($roa);
                             break;
                         default:
-                            sql_query("INSERT INTO " . sql_table('plugin_analyze_robot') . " VALUES ('XML-RSS', '" . $adate . "', '" . $rss_gr . "', '" . $arovisit . "')");
+                            sql_query(
+                                sprintf(
+                                    "INSERT INTO %s VALUES ('XML-RSS', '%s', '%s', '%s')",
+                                    sql_table('plugin_analyze_robot'),
+                                    $adate,
+                                    $rss_gr,
+                                    $arovisit
+                                )
+                            );
                     }
                 }
 
@@ -1105,8 +1288,20 @@ class NP_Analyze extends NucleusPlugin
                 if ($this->TableExists($t_table)) {
                     sql_query("DROP TABLE " . $t_table);
                 }
-                sql_query("CREATE TABLE " . $t_table . " as SELECT * FROM " . sql_table('plugin_analyze_log'));
-                sql_query("DELETE FROM " . $t_table . " WHERE " . $this->ExRobo('alip', '2') . "alip = ''");
+                sql_query(
+                    sprintf(
+                        "CREATE TABLE %s as SELECT * FROM %s",
+                        $t_table,
+                        sql_table('plugin_analyze_log')
+                    )
+                );
+                sql_query(
+                    sprintf(
+                        "DELETE FROM %s WHERE %salip = ''",
+                        $t_table,
+                        $this->ExRobo('alip', '2')
+                    )
+                );
                 sql_query("OPTIMIZE TABLE " . $t_table);
                 sql_query("TRUNCATE TABLE " . sql_table('plugin_analyze_log'));
 
@@ -1183,7 +1378,14 @@ class NP_Analyze extends NucleusPlugin
             case ($type === 'hit'):
                 switch (TRUE) {
                     case ($m4):
-                        sql_query("CREATE TEMPORARY TABLE " . sql_table('t_table') . " as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3), '?', 1) as apid0, apid, aphit1, apdate FROM " . sql_table('plugin_analyze_page') . " WHERE apid LIKE '%i?%'");
+                        sql_query(
+                            sprintf(
+                                "CREATE TEMPORARY TABLE %s as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3), '?', 1) as apid0, apid, aphit1, apdate"
+                                . " FROM %s WHERE apid LIKE '%%i?%%'",
+                                sql_table('t_table'),
+                                sql_table('plugin_analyze_page')
+                            )
+                        );
                         $q1 = " left join " . sql_table('item') . " on inumber = apid0";
                     case ($m4 === 'b'):
                         $q2 = "' and iblog = '" . $blogid;
@@ -1192,7 +1394,12 @@ class NP_Analyze extends NucleusPlugin
                         $q2 = "' and icat = '" . $catid;
                 }
                 $table = ($m4) ? 't_table' : 'plugin_analyze_page';
-                $query = "SELECT apid, aphit1 FROM " . sql_table($table) . $q1 . " WHERE LEFT(apdate, 7) = '" . $qdate;
+                $query = sprintf(
+                    "SELECT apid, aphit1 FROM %s%s WHERE LEFT(apdate, 7) = '%s",
+                    sql_table($table),
+                    $q1,
+                    $qdate
+                );
                 if ($m3 && !$m4) {
                     $query .= "' and apid LIKE '%" . $m3 . "?%";
                 }
@@ -1226,7 +1433,11 @@ class NP_Analyze extends NucleusPlugin
                 break;
             case ($type === 'query'):
                 $que = ($m3 === 'item') ? 'i?' . $itemid : $m3;
-                $query = "SELECT apqid, apqquery, apqvisit FROM " . sql_table('plugin_analyze_page_query') . " WHERE LEFT(apqdate, 7) = '" . $qdate;
+                $query = sprintf(
+                    "SELECT apqid, apqquery, apqvisit FROM %s WHERE LEFT(apqdate, 7) = '%s",
+                    sql_table('plugin_analyze_page_query'),
+                    $qdate
+                );
                 if ($m3) {
                     $query .= "' and apqid LIKE '%" . $que . "?%";
                 }
@@ -1264,7 +1475,11 @@ class NP_Analyze extends NucleusPlugin
             case ($type === 'pattern' && $itemid):
                 $data = ($m4) ? 'appid' : 'apppage';
                 $data0 = ($m4) ? 'apppage' : 'appid';
-                $query = "SELECT appid, apppage, appvisit FROM " . sql_table('plugin_analyze_page_pattern') . " WHERE LEFT(appdate, 7) = '" . $qdate;
+                $query = sprintf(
+                    "SELECT appid, apppage, appvisit FROM %s WHERE LEFT(appdate, 7) = '%s",
+                    sql_table('plugin_analyze_page_pattern'),
+                    $qdate
+                );
                 $query .= "' and " . $data . " LIKE '%i?" . $itemid . "?%";
                 if ($m3) {
                     $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
@@ -1303,9 +1518,12 @@ class NP_Analyze extends NucleusPlugin
                 mysql_free_result($tp1);
                 break;
             case ($type === 'link'):
-                $query = "SELECT arreferer, arvisit FROM " . sql_table('plugin_analyze_referer') . " WHERE LEFT(ardate, 7) = '";
-                $query .= (!$m2) ? date("Y-m") : date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01')));
-                $query .= "' ORDER BY arvisit DESC LIMIT 0, " . $id;
+                $query = sprintf(
+                    "SELECT arreferer, arvisit FROM %s WHERE LEFT(ardate, 7)='%s' ORDER BY arvisit DESC LIMIT 0, %s",
+                    sql_table('plugin_analyze_referer'),
+                    $m2 ? date('Y-m', strtotime("-1 month", strtotime(date('Y-m') . '-01'))) : date("Y-m"),
+                    $id
+                );
                 $tp1 = sql_query($query);
                 while ($row = mysql_fetch_assoc($tp1)) {
                     $ref_l = htmlspecialchars($row['arreferer']);
@@ -1348,10 +1566,22 @@ class NP_Analyze extends NucleusPlugin
             return;
         }
         $tp0 = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=i?' . $itemid . '&amp;past=' . date("Y-m") . '"><img src="' . $CONF['AdminURL'] . 'documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
-        $q1 = "SELECT aphit1 as result FROM " . sql_table('plugin_analyze_page') . " WHERE LEFT(apdate, 7) = '";
-        $q2 = "' and apid LIKE '%i?" . $itemid . "?%' LIMIT 1";
-        $tp1 = quickQuery($q1 . date("Y-m") . $q2);
-        $tp2 = quickQuery($q1 . date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01'))) . $q2);
+        $tp1 = quickQuery(
+            sprintf(
+                "SELECT aphit1 as result FROM %s WHERE LEFT(apdate, 7) = '%s' and apid LIKE '%%i?%s?%%' LIMIT 1",
+                sql_table('plugin_analyze_page'),
+                date("Y-m"),
+                $itemid
+            )
+        );
+        $tp2 = quickQuery(
+            sprintf(
+                "SELECT aphit1 as result FROM %s WHERE LEFT(apdate, 7)='%s' and apid LIKE '%%i?%s?%%' LIMIT 1",
+                sql_table('plugin_analyze_page'),
+                date("Y-m", strtotime("-1 month", strtotime(date("Y-m") . '-01'))),
+                $itemid
+            )
+        );
         $chan = $tp0 . number_format($tp1);
         if ($tp2) {
             $chan .= '(*' . number_format($tp2) . ')';
@@ -1365,14 +1595,30 @@ class NP_Analyze extends NucleusPlugin
         $alip = addslashes($alip);
         $alreferer = addslashes($alreferer);
         $alword = addslashes($alword);
-        sql_query('INSERT INTO ' . sql_table('plugin_analyze_log') . " (alid, aldate, alip, alreferer, alword) VALUES ('$alid', '$aldate', '$alip', '$alreferer', '$alword')");
+        sql_query(
+            sprintf(
+                "INSERT INTO %s (alid, aldate, alip, alreferer, alword) VALUES ('%s', '%s', '%s', '%s', '%s')",
+                sql_table('plugin_analyze_log'),
+                $alid,
+                $aldate,
+                $alip,
+                $alreferer,
+                $alword
+            )
+        );
         return;
     }
 
     function ExRobo($alip = '', $anid = '')
     {
         $anid = ($anid) ? $anid : '1,2';
-        $result = sql_query("SELECT anip, antitle FROM " . sql_table('plugin_analyze_ng') . " WHERE anid in (" . $anid . ")");
+        $result = sql_query(
+            sprintf(
+                "SELECT anip, antitle FROM %s WHERE anid in (%s)",
+                sql_table('plugin_analyze_ng'),
+                $anid
+            )
+        );
         while ($res = mysql_fetch_assoc($result)) {
             if ($res['antitle'] === 'rss') {
                 $robo .= " alid = 'r?' or ";
@@ -1447,7 +1693,18 @@ class NP_Analyze extends NucleusPlugin
             $c_2 = $rows - $d_count;
             foreach ($mtable3 as $md => $md1) {
                 if ($mt == $md && $c_2 > 0) {
-                    sql_query("DELETE FROM " . sql_table($mt) . " WHERE " . $mt1 . " >= '" . $pe_d . "' and " . $mt1 . " < '" . $pe_d2 . "' ORDER BY " . $md1 . " ASC LIMIT " . $c_2);
+                    sql_query(
+                        sprintf(
+                            "DELETE FROM %s WHERE %s >= '%s' and %s < '%s' ORDER BY %s ASC LIMIT %s",
+                            sql_table($mt),
+                            $mt1,
+                            $pe_d,
+                            $mt1,
+                            $pe_d2,
+                            $md1,
+                            $c_2
+                        )
+                    );
                 }
             }
             sql_query("OPTIMIZE TABLE " . sql_table($mt));
