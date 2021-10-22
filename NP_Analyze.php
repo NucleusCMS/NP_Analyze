@@ -956,21 +956,16 @@ class NP_Analyze extends NucleusPlugin
                 $ip_group = sql_query($ip_grou);
                 $ahvisit = mysql_num_rows($ip_group);
                 while ($row = mysql_fetch_assoc($ip_group)) {
-                    switch (TRUE) {
-                        case ($row['count'] > $hit_range[3]):
-                            $ahlevel5++;
-                            break;
-                        case ($row['count'] > $hit_range[2]):
-                            $ahlevel4++;
-                            break;
-                        case ($row['count'] > $hit_range[1]):
-                            $ahlevel3++;
-                            break;
-                        case ($row['count'] > $hit_range[0]):
-                            $ahlevel2++;
-                            break;
-                        default:
-                            $ahlevel1++;
+                    if ($row['count'] > $hit_range[3]) {
+                        $ahlevel5++;
+                    } elseif ($row['count'] > $hit_range[2]) {
+                        $ahlevel4++;
+                    } elseif ($row['count'] > $hit_range[1]) {
+                        $ahlevel3++;
+                    } elseif ($row['count'] > $hit_range[0]) {
+                        $ahlevel2++;
+                    } else {
+                        $ahlevel1++;
                     }
                 }
                 $c_time = quickQuery(
@@ -1236,217 +1231,230 @@ class NP_Analyze extends NucleusPlugin
         $itemid = (int)$itemid;
         $m5 = (int)$m5;
         if ($m2 == 1 || $m2 == 3) {
-            $qdate = date('Y-m', strtotime("-1 month", strtotime(date("Y-m") . '-01')));
+            $qdate = date('Y-m', strtotime("-1 month", strtotime(date('Y-m') . '-01')));
         } else {
             $qdate = date('Y-m');
         }
-        switch (TRUE) {
-            case (!$m1):
-                $m1 = 'div';
-                $m1a = 'span';
-                break;
-            case ($m1 === 'tr'):
-                $m1a = 'td';
-                break;
-            default:
-                $m1a = 'span';
+
+        if (!$m1){
+            $m1 = 'div';
+            $m1a = 'span';
+        } elseif($m1 === 'tr') {
+            $m1a = 'td';
+        } else {
+            $m1a = 'span';
         }
+
         if ($id > 100) {
             $id = 100;
         }
+
+        if($type === 'count' && $id === 'all') {
+            echo $this->Countting($id, $cat);
+            return;
+        }
+        if ($type === 'count') {
+            echo $this->ShowCountting($id, $cat);
+            return;
+        }
+
         $i = 1;
-        switch (TRUE) {
-            case ($type === 'count' && $id === 'all'):
-                echo $this->Countting($id, $cat);
-                break;
-            case ($type === 'count'):
-                echo $this->ShowCountting($id, $cat);
-                break;
-            case ($type === 'hit'):
-                if ($m4) {
-                    sql_query(
-                        sprintf(
-                            "CREATE TEMPORARY TABLE"
-                            . " %s as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3),'?',1) as apid0,apid,aphit1,apdate"
-                            . " FROM %s WHERE apid LIKE '%%i?%%'",
-                            sql_table('t_table'),
-                            sql_table('plugin_analyze_page')
-                        )
-                    );
-                    $q1 = " left join " . sql_table('item') . " on inumber = apid0";
-                }
-                if ($m4 === 'b') {
-                    $q2 = "' and iblog = '" . $blogid;
-                } elseif ($m4 === 'c') {
-                    $q2 = "' and icat = '" . $catid;
-                } else {
-                    $q2 = '';
-                }
-                $table = $m4 ? 't_table' : 'plugin_analyze_page';
-                $query = sprintf(
-                    "SELECT apid, aphit1 FROM %s%s WHERE LEFT(apdate, 7) = '%s",
-                    sql_table($table),
-                    $q1,
-                    $qdate
+        if($type === 'hit') {
+            if ($m4) {
+                sql_query(
+                    sprintf(
+                        "CREATE TEMPORARY TABLE"
+                        . " %s as SELECT SUBSTRING_INDEX(SUBSTRING(apid, 3),'?',1) as apid0,apid,aphit1,apdate"
+                        . " FROM %s WHERE apid LIKE '%%i?%%'",
+                        sql_table('t_table'),
+                        sql_table('plugin_analyze_page')
+                    )
                 );
-                if ($m3 && !$m4) {
-                    $query .= "' and apid LIKE '%" . $m3 . "?%";
+                $q1 = " left join " . sql_table('item') . " on inumber = apid0";
+            }
+            if ($m4 === 'b') {
+                $q2 = "' and iblog = '" . $blogid;
+            } elseif ($m4 === 'c') {
+                $q2 = "' and icat = '" . $catid;
+            } else {
+                $q2 = '';
+            }
+            $table = $m4 ? 't_table' : 'plugin_analyze_page';
+            $query = sprintf(
+                "SELECT apid, aphit1 FROM %s%s WHERE LEFT(apdate, 7) = '%s",
+                sql_table($table),
+                $q1,
+                $qdate
+            );
+            if ($m3 && !$m4) {
+                $query .= "' and apid LIKE '%" . $m3 . "?%";
+            }
+            $query .= $q2 . "' ORDER BY aphit1 DESC LIMIT 0, " . $id;
+            $tp1 = sql_query($query);
+            while ($row = mysql_fetch_assoc($tp1)) {
+                $apid = explode('?', $row['apid'], 3);
+                $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
+                echo sprintf('<%s class="analyze_top">', $m1);
+                if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
+                    echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                 }
-                $query .= $q2 . "' ORDER BY aphit1 DESC LIMIT 0, " . $id;
-                $tp1 = sql_query($query);
-                while ($row = mysql_fetch_assoc($tp1)) {
-                    $apid = explode('?', $row['apid'], 3);
-                    $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
-                    echo sprintf('<%s class="analyze_top">', $m1);
-                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
+                echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $apid1, $m1a);
+                if ($m2 > 1) {
+                    if ($apid[0] === 'i') {
+                        $dr = $this->DirectLink($apid[1]);
                     }
-                    echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $apid1, $m1a);
-                    if ($m2 > 1) {
-                        if ($apid[0] === 'i') {
-                            $dr = $this->DirectLink($apid[1]);
-                        }
-                        echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
-                    }
-                    if ($cat != 1 && $cat != 3) {
-                        echo sprintf(
-                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
-                            $m1a, number_format($row['aphit1']), $m1a
-                        );
-                    }
-                    echo sprintf("</%s>", $m1);
-                    $i++;
+                    echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                 }
-                mysql_free_result($tp1);
-                break;
-            case ($type === 'query'):
-                $que = ($m3 === 'item') ? 'i?' . $itemid : $m3;
-                $query = sprintf(
-                    "SELECT apqid, apqquery, apqvisit FROM %s WHERE LEFT(apqdate, 7) = '%s",
-                    sql_table('plugin_analyze_page_query'),
-                    $qdate
-                );
-                if ($m3) {
-                    $query .= "' and apqid LIKE '%" . $que . "?%";
-                }
-                $query .= "' ORDER BY apqvisit DESC LIMIT 0, " . $id;
-                $tp1 = sql_query($query);
-                while ($row = mysql_fetch_assoc($tp1)) {
-                    $apid = explode('?', $row['apqid'], 3);
-                    $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
-                    echo sprintf('<%s class="analyze_top">', $m1);
-                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
-                    }
-                    if ($m3 !== 'item') {
-                        echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
-                    }
-                    if ($m3 !== 'item' && $m2 > 1) {
-                        if ($apid[0] === 'i') {
-                            $dr = $this->DirectLink($apid[1]);
-                        }
-                        echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
-                    }
+                if ($cat != 1 && $cat != 3) {
                     echo sprintf(
-                        '<%s class="analyze_body"> %s</%s>',
-                        $m1a, htmlspecialchars($row['apqquery']), $m1a
+                        '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                        $m1a, number_format($row['aphit1']), $m1a
                     );
-                    if ($cat != 1 && $cat != 3) {
-                        echo sprintf(
-                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
-                            $m1a, number_format($row['apqvisit']), $m1a
-                        );
-                    }
-                    echo sprintf("</%s>", $m1);
-                    $i++;
                 }
-                mysql_free_result($tp1);
-                break;
-            case ($type === 'pattern' && $itemid):
-                $data = $m4 ? 'appid' : 'apppage';
-                $data0 = $m4 ? 'apppage' : 'appid';
-                $query = sprintf(
-                    "SELECT appid, apppage, appvisit FROM %s WHERE LEFT(appdate, 7) = '%s",
-                    sql_table('plugin_analyze_page_pattern'),
-                    $qdate
-                );
-                $query .= "' and " . $data . " LIKE '%i?" . $itemid . "?%";
-                if ($m3) {
-                    $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
+                echo sprintf("</%s>", $m1);
+                $i++;
+            }
+            mysql_free_result($tp1);
+            return;
+        }
+
+        if($type === 'query') {
+            $que = ($m3 === 'item') ? 'i?' . $itemid : $m3;
+            $query = sprintf(
+                "SELECT apqid, apqquery, apqvisit FROM %s WHERE LEFT(apqdate, 7) = '%s",
+                sql_table('plugin_analyze_page_query'),
+                $qdate
+            );
+            if ($m3) {
+                $query .= "' and apqid LIKE '%" . $que . "?%";
+            }
+            $query .= "' ORDER BY apqvisit DESC LIMIT 0, " . $id;
+            $tp1 = sql_query($query);
+            while ($row = mysql_fetch_assoc($tp1)) {
+                $apid = explode('?', $row['apqid'], 3);
+                $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
+                echo sprintf('<%s class="analyze_top">', $m1);
+                if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
+                    echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                 }
-                $query .= "' ORDER BY appvisit DESC LIMIT 0, " . $id;
-                $tp1 = sql_query($query);
-                while ($row = mysql_fetch_assoc($tp1)) {
-                    $apid = explode('?', $row['appid'], 3);
-                    $apid1 = $this->IdChange($apid[0], $apid[1], $apid[2], '+', $m5);
-                    $apid2 = explode('?', $row['apppage'], 3);
-                    $apid3 = $this->IdChange($apid2[0], $apid2[1], $apid2[2], '+', $m5);
-                    $data1 = $m4 ? $apid3 : $apid1;
-                    $data2 = $m4 ? $apid2[0] : $apid[0];
-                    echo sprintf('<%s class="analyze_top">', $m1);
-                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
-                    }
-                    echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $data1, $m1a);
-                    if ($m2 > 1) {
-                        if ($data2 === 'i') {
-                            $dr = $this->DirectLink($apid[1]);
-                        }
-                        echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
-                    }
-                    if ($cat != 1 && $cat != 3) {
-                        echo sprintf(
-                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
-                            $m1a, number_format($row['appvisit']), $m1a
-                        );
-                    }
-                    echo sprintf("</%s>", $m1);
-                    $i++;
+                if ($m3 !== 'item') {
+                    echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
                 }
-                mysql_free_result($tp1);
-                break;
-            case ($type === 'link'):
-                $query = sprintf(
-                    "SELECT arreferer, arvisit FROM %s WHERE LEFT(ardate, 7)='%s' ORDER BY arvisit DESC LIMIT 0, %s",
-                    sql_table('plugin_analyze_referer'),
-                    $m2 ? date('Y-m', strtotime("-1 month", strtotime(date('Y-m') . '-01'))) : date("Y-m"),
-                    $id
-                );
-                $tp1 = sql_query($query);
-                while ($row = mysql_fetch_assoc($tp1)) {
-                    $ref_l = htmlspecialchars($row['arreferer']);
-                    if (!$m5) {
-                        $m5 = '50';
+                if ($m3 !== 'item' && $m2 > 1) {
+                    if ($apid[0] === 'i') {
+                        $dr = $this->DirectLink($apid[1]);
                     }
-                    $link = substr($ref_l, 0, $m5);
-                    if (strlen($ref_l) > $m5) {
-                        $link .= '...';
-                    }
-                    echo sprintf('<%s class="analyze_top">', $m1);
-                    if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
-                    }
-                    echo sprintf(
-                        '<%s class="analyze_body"><a href="%s">%s</a></%s>',
-                        $m1a, $ref_l, $link, $m1a
-                    );
-                    if ($cat != 1 && $cat != 3) {
-                        echo sprintf(
-                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
-                            $m1a, number_format($row['arvisit']), $m1a
-                        );
-                    }
-                    echo sprintf('</%s>', $m1);
-                    $i++;
+                    echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                 }
-                mysql_free_result($tp1);
-                break;
-            case ($this->getOption('alz_copyright') === 'yes'):
                 echo sprintf(
-                    '<a href="%s" title="%s NP_%s%s">%s</a>',
-                    htmlspecialchars($this->getURL()), $this->getDescription(),
-                    $this->getName(), $this->getVersion(), $this->getName()
+                    '<%s class="analyze_body"> %s</%s>',
+                    $m1a, htmlspecialchars($row['apqquery']), $m1a
                 );
+                if ($cat != 1 && $cat != 3) {
+                    echo sprintf(
+                        '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                        $m1a, number_format($row['apqvisit']), $m1a
+                    );
+                }
+                echo sprintf("</%s>", $m1);
+                $i++;
+            }
+            mysql_free_result($tp1);
+            return;
+        }
+
+        if($type === 'pattern') {
+            if(!$itemid) {
+                return;
+            }
+            $data = $m4 ? 'appid' : 'apppage';
+            $data0 = $m4 ? 'apppage' : 'appid';
+            $query = sprintf(
+                "SELECT appid, apppage, appvisit FROM %s WHERE LEFT(appdate, 7) = '%s",
+                sql_table('plugin_analyze_page_pattern'),
+                $qdate
+            );
+            $query .= "' and " . $data . " LIKE '%i?" . $itemid . "?%";
+            if ($m3) {
+                $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
+            }
+            $query .= "' ORDER BY appvisit DESC LIMIT 0, " . $id;
+            $tp1 = sql_query($query);
+            while ($row = mysql_fetch_assoc($tp1)) {
+                $apid = explode('?', $row['appid'], 3);
+                $apid1 = $this->IdChange($apid[0], $apid[1], $apid[2], '+', $m5);
+                $apid2 = explode('?', $row['apppage'], 3);
+                $apid3 = $this->IdChange($apid2[0], $apid2[1], $apid2[2], '+', $m5);
+                $data1 = $m4 ? $apid3 : $apid1;
+                $data2 = $m4 ? $apid2[0] : $apid[0];
+                echo sprintf('<%s class="analyze_top">', $m1);
+                if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
+                    echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
+                }
+                echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $data1, $m1a);
+                if ($m2 > 1) {
+                    if ($data2 === 'i') {
+                        $dr = $this->DirectLink($apid[1]);
+                    }
+                    echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
+                }
+                if ($cat != 1 && $cat != 3) {
+                    echo sprintf(
+                        '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                        $m1a, number_format($row['appvisit']), $m1a
+                    );
+                }
+                echo sprintf("</%s>", $m1);
+                $i++;
+            }
+            mysql_free_result($tp1);
+            return;
+        }
+
+        if($type === 'link') {
+            $query = sprintf(
+                "SELECT arreferer, arvisit FROM %s WHERE LEFT(ardate, 7)='%s' ORDER BY arvisit DESC LIMIT 0, %s",
+                sql_table('plugin_analyze_referer'),
+                $m2 ? date('Y-m', strtotime("-1 month", strtotime(date('Y-m') . '-01'))) : date("Y-m"),
+                $id
+            );
+            $tp1 = sql_query($query);
+            while ($row = mysql_fetch_assoc($tp1)) {
+                $ref_l = htmlspecialchars($row['arreferer']);
+                if (!$m5) {
+                    $m5 = '50';
+                }
+                $link = substr($ref_l, 0, $m5);
+                if (strlen($ref_l) > $m5) {
+                    $link .= '...';
+                }
+                echo sprintf('<%s class="analyze_top">', $m1);
+                if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
+                    echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
+                }
+                echo sprintf(
+                    '<%s class="analyze_body"><a href="%s">%s</a></%s>',
+                    $m1a, $ref_l, $link, $m1a
+                );
+                if ($cat != 1 && $cat != 3) {
+                    echo sprintf(
+                        '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                        $m1a, number_format($row['arvisit']), $m1a
+                    );
+                }
+                echo sprintf('</%s>', $m1);
+                $i++;
+            }
+            mysql_free_result($tp1);
+            return;
+        }
+
+        if ($this->getOption('alz_copyright') === 'yes') {
+            echo sprintf(
+                '<a href="%s" title="%s NP_%s%s">%s</a>',
+                htmlspecialchars($this->getURL()), $this->getDescription(),
+                $this->getName(), $this->getVersion(), $this->getName()
+            );
         }
     }
 
