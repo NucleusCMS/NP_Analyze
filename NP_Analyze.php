@@ -1297,13 +1297,11 @@ class NP_Analyze extends NucleusPlugin
                 while ($row = mysql_fetch_assoc($tp1)) {
                     $apid = explode('?', $row['apid'], 3);
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
-                    echo '
-<' . $m1 . ' class="analyze_top">';
+                    echo sprintf('<%s class="analyze_top">', $m1);
                     if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo '
-<' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                     }
-                    echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
+                    echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $apid1, $m1a);
                     if ($m2 > 1) {
                         if ($apid[0] === 'i') {
                             $dr = $this->DirectLink($apid[1]);
@@ -1311,10 +1309,12 @@ class NP_Analyze extends NucleusPlugin
                         echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     if ($cat != 1 && $cat != 3) {
-                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['aphit1']) . '</' . $m1a . '>';
+                        echo sprintf(
+                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                            $m1a, number_format($row['aphit1']), $m1a
+                        );
                     }
-                    echo '
-</' . $m1 . '>';
+                    echo sprintf("</%s>", $m1);
                     $i++;
                 }
                 mysql_free_result($tp1);
@@ -1334,11 +1334,9 @@ class NP_Analyze extends NucleusPlugin
                 while ($row = mysql_fetch_assoc($tp1)) {
                     $apid = explode('?', $row['apqid'], 3);
                     $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
-                    echo '
-<' . $m1 . ' class="analyze_top">';
+                    echo sprintf('<%s class="analyze_top">', $m1);
                     if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo '
-<' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                     }
                     if ($m3 !== 'item') {
                         echo '<' . $m1a . ' class="analyze_body">' . $apid1 . '</' . $m1a . '>';
@@ -1349,19 +1347,24 @@ class NP_Analyze extends NucleusPlugin
                         }
                         echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
-                    echo '<' . $m1a . ' class="analyze_body"> ' . htmlspecialchars($row['apqquery']) . '</' . $m1a . '>';
+                    echo sprintf(
+                        '<%s class="analyze_body"> %s</%s>',
+                        $m1a, htmlspecialchars($row['apqquery']), $m1a
+                    );
                     if ($cat != 1 && $cat != 3) {
-                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['apqvisit']) . '</' . $m1a . '>';
+                        echo sprintf(
+                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                            $m1a, number_format($row['apqvisit']), $m1a
+                        );
                     }
-                    echo '
-</' . $m1 . '>';
+                    echo sprintf("</%s>", $m1);
                     $i++;
                 }
                 mysql_free_result($tp1);
                 break;
             case ($type === 'pattern' && $itemid):
-                $data = ($m4) ? 'appid' : 'apppage';
-                $data0 = ($m4) ? 'apppage' : 'appid';
+                $data = $m4 ? 'appid' : 'apppage';
+                $data0 = $m4 ? 'apppage' : 'appid';
                 $query = sprintf(
                     "SELECT appid, apppage, appvisit FROM %s WHERE LEFT(appdate, 7) = '%s",
                     sql_table('plugin_analyze_page_pattern'),
@@ -1378,16 +1381,13 @@ class NP_Analyze extends NucleusPlugin
                     $apid1 = $this->IdChange($apid[0], $apid[1], $apid[2], '+', $m5);
                     $apid2 = explode('?', $row['apppage'], 3);
                     $apid3 = $this->IdChange($apid2[0], $apid2[1], $apid2[2], '+', $m5);
-                    $data1 = ($m4) ? $apid3 : $apid1;
-                    $data2 = ($m4) ? $apid2[0] : $apid[0];
-                    echo '
-<' . $m1 . ' class="analyze_top">';
+                    $data1 = $m4 ? $apid3 : $apid1;
+                    $data2 = $m4 ? $apid2[0] : $apid[0];
+                    echo sprintf('<%s class="analyze_top">', $m1);
                     if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo '
-<' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                     }
-                    echo '
-<' . $m1a . ' class="analyze_body">' . $data1 . '</' . $m1a . '>';
+                    echo sprintf('<%s class="analyze_body">%s</%s>', $m1a, $data1, $m1a);
                     if ($m2 > 1) {
                         if ($data2 === 'i') {
                             $dr = $this->DirectLink($apid[1]);
@@ -1395,10 +1395,12 @@ class NP_Analyze extends NucleusPlugin
                         echo '<' . $m1a . '>' . $dr . '</' . $m1a . '>';
                     }
                     if ($cat != 1 && $cat != 3) {
-                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['appvisit']) . '</' . $m1a . '>';
+                        echo sprintf(
+                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                            $m1a, number_format($row['appvisit']), $m1a
+                        );
                     }
-                    echo '
-</' . $m1 . '>';
+                    echo sprintf("</%s>", $m1);
                     $i++;
                 }
                 mysql_free_result($tp1);
@@ -1420,25 +1422,31 @@ class NP_Analyze extends NucleusPlugin
                     if (strlen($ref_l) > $m5) {
                         $link .= '...';
                     }
-                    echo '
-<' . $m1 . ' class="analyze_top">';
+                    echo sprintf('<%s class="analyze_top">', $m1);
                     if ($m1 !== 'li' && $cat != 2 && $cat != 3) {
-                        echo '
-<' . $m1a . ' class="analyze_num">' . $i . '.</' . $m1a . '>';
+                        echo sprintf('<%s class="analyze_num">%s.</%s>', $m1a, $i, $m1a);
                     }
-                    echo '
-<' . $m1a . ' class="analyze_body"><a href="' . $ref_l . '">' . $link . '</a></' . $m1a . '>';
+                    echo sprintf(
+                        '<%s class="analyze_body"><a href="%s">%s</a></%s>',
+                        $m1a, $ref_l, $link, $m1a
+                    );
                     if ($cat != 1 && $cat != 3) {
-                        echo '<' . $m1a . ' class="analyze_count" style="text-align: right;"> ' . number_format($row['arvisit']) . '</' . $m1a . '>';
+                        echo sprintf(
+                            '<%s class="analyze_count" style="text-align: right;"> %s</%s>',
+                            $m1a, number_format($row['arvisit']), $m1a
+                        );
                     }
-                    echo '
-</' . $m1 . '>';
+                    echo sprintf('</%s>', $m1);
                     $i++;
                 }
                 mysql_free_result($tp1);
                 break;
             case ($this->getOption('alz_copyright') === 'yes'):
-                echo '<a href="' . htmlspecialchars($this->getURL()) . '" title="' . $this->getDescription() . ' NP_' . $this->getName() . $this->getVersion() . '">' . $this->getName() . '</a>';
+                echo sprintf(
+                    '<a href="%s" title="%s NP_%s%s">%s</a>',
+                    htmlspecialchars($this->getURL()), $this->getDescription(),
+                    $this->getName(), $this->getVersion(), $this->getName()
+                );
         }
     }
 
@@ -1451,7 +1459,10 @@ class NP_Analyze extends NucleusPlugin
         if ($this->loginMember() != 1 && !$member->isAdmin()) {
             return;
         }
-        $tp0 = '<a href="' . $CONF['PluginURL'] . 'analyze/index.php?select=g&amp;group=page&amp;query=i?' . $itemid . '&amp;past=' . date("Y-m") . '"><img src="' . $CONF['AdminURL'] . 'documentation/icon-up.gif" alt="link" title="' . _NP_ANALYZE_PAGE . _NP_ANALYZE_GROUP1 . '" height="15" width="15"></a>';
+        $tp0 = sprintf(
+            '<a href="%sanalyze/index.php?select=g&amp;group=page&amp;query=i?%s&amp;past=%s"><img src="%sdocumentation/icon-up.gif" alt="link" title="%s%s" height="15" width="15"></a>',
+            $CONF['PluginURL'], $itemid, date("Y-m"), $CONF['AdminURL'], _NP_ANALYZE_PAGE, _NP_ANALYZE_GROUP1
+        );
         $tp1 = quickQuery(
             sprintf(
                 "SELECT aphit1 as result FROM %s WHERE LEFT(apdate, 7) = '%s' and apid LIKE '%%i?%s?%%' LIMIT 1",
@@ -1703,7 +1714,10 @@ class NP_Analyze extends NucleusPlugin
                 )
             );
             $s0 = explode('/', $this->getOption('alz_counter'));
-            return $s0[0] . number_format($total_v + $today_v) . $s0[1] . number_format($today_v) . $s0[2] . number_format($yday);
+            return sprintf(
+                '%s%s%s%s%s%s',
+                $s0[0], number_format($total_v + $today_v), $s0[1], number_format($today_v), $s0[2], number_format($yday)
+            );
         }
 
         if ($id === 'total') {
