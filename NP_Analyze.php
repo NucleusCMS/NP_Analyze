@@ -1820,10 +1820,10 @@ class NP_Analyze extends NucleusPlugin
         }
 
         if (_CHARSET === 'EUC-JP') {
-            return mb_strimwidth($apname, 0, $acount, '..', euc);
+            return mb_strimwidth($apname, 0, $acount, '..', 'euc');
         }
 
-        return mb_strimwidth($apname, 0, $acount, '..', utf8);
+        return mb_strimwidth($apname, 0, $acount, '..', 'utf8');
     }
 
     function ChangeData($past = '', $que1 = '', $jd = '', $que = '', $hd = '', $bd = '')
