@@ -1270,27 +1270,28 @@ class NP_Analyze extends NucleusPlugin
                         sql_table('plugin_analyze_page')
                     )
                 );
-                $q1 = " left join " . sql_table('item') . " on inumber = apid0";
-            }
-            if ($m4 === 'b') {
-                $q2 = "' and iblog = '" . $blogid;
-            } elseif ($m4 === 'c') {
-                $q2 = "' and icat = '" . $catid;
+                $query = sprintf(
+                    "SELECT apid, aphit1 FROM %s left join %s  on inumber=apid0 WHERE LEFT(apdate, 7)='%s",
+                    sql_table('t_table'),
+                    sql_table('item'),
+                    $qdate
+                );
+                if ($m4 === 'b') {
+                    $query .= "' and iblog = '" . $blogid;
+                } elseif ($m4 === 'c') {
+                    $query .= "' and icat = '" . $catid;
+                }
             } else {
-                $q2 = '';
+                $query = sprintf(
+                    "SELECT apid, aphit1 FROM %s WHERE LEFT(apdate, 7)='%s",
+                    sql_table('plugin_analyze_page'),
+                    $qdate
+                );
+                if ($m3) {
+                    $query .= "' and apid LIKE '%" . $m3 . "?%";
+                }
             }
-            $table = $m4 ? 't_table' : 'plugin_analyze_page';
-            $query = sprintf(
-                "SELECT apid, aphit1 FROM %s%s WHERE LEFT(apdate, 7) = '%s",
-                sql_table($table),
-                $q1,
-                $qdate
-            );
-            if ($m3 && !$m4) {
-                $query .= "' and apid LIKE '%" . $m3 . "?%";
-            }
-            $query .= $q2 . "' ORDER BY aphit1 DESC LIMIT 0, " . $id;
-            $tp1 = sql_query($query);
+            $tp1 = sql_query($query . "' ORDER BY aphit1 DESC LIMIT 0, " . $id);
             while ($row = mysql_fetch_assoc($tp1)) {
                 $apid = explode('?', $row['apid'], 3);
                 $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
@@ -1328,8 +1329,7 @@ class NP_Analyze extends NucleusPlugin
             if ($m3) {
                 $query .= "' and apqid LIKE '%" . $que . "?%";
             }
-            $query .= "' ORDER BY apqvisit DESC LIMIT 0, " . $id;
-            $tp1 = sql_query($query);
+            $tp1 = sql_query($query . "' ORDER BY apqvisit DESC LIMIT 0, " . $id);
             while ($row = mysql_fetch_assoc($tp1)) {
                 $apid = explode('?', $row['apqid'], 3);
                 $apid1 = $this->IdChange($apid[0], $apid[1], '', '+', $m5);
@@ -1378,8 +1378,7 @@ class NP_Analyze extends NucleusPlugin
             if ($m3) {
                 $query .= "' and " . $data0 . " LIKE '%" . $m3 . "?%";
             }
-            $query .= "' ORDER BY appvisit DESC LIMIT 0, " . $id;
-            $tp1 = sql_query($query);
+            $tp1 = sql_query($query . "' ORDER BY appvisit DESC LIMIT 0, " . $id);
             while ($row = mysql_fetch_assoc($tp1)) {
                 $apid = explode('?', $row['appid'], 3);
                 $apid1 = $this->IdChange($apid[0], $apid[1], $apid[2], '+', $m5);
