@@ -118,9 +118,9 @@ class NP_Analyze extends NucleusPlugin
             sprintf(
                 "INSERT INTO %s (alid, aldate, alip, alreferer) VALUES ('%s', '%s', '%s', '%s')",
                 sql_table('plugin_analyze_log'),
-                'co?' . (int)$data['commentid'] . '?' . addslashes($comment['user']),
+                'co?' . (int)$data['commentid'] . '?' . sql_real_escape_string($comment['user']),
                 date('Y-m-d H:i:s', $comment['timestamp']),
-                addslashes($comment['host']),
+                sql_real_escape_string($comment['host']),
                 'i?' . (int)$comment['itemid'] . '?'
             )
         );
@@ -824,7 +824,7 @@ class NP_Analyze extends NucleusPlugin
                     }
                 }
         }
-        $alip = addslashes(@gethostbyaddr($_SERVER['REMOTE_ADDR']));
+        $alip = @gethostbyaddr($_SERVER['REMOTE_ADDR']);
         $aldate = date("Y-m-d H:i:s", time() + ($this->getOption('alz_time_d') * 3600));
         $t0y = date("Y", strtotime($aldate));
         $t0m = date("m", strtotime($aldate));
@@ -835,7 +835,7 @@ class NP_Analyze extends NucleusPlugin
                 sprintf(
                     "SELECT alid as result FROM %s WHERE alip='%s' ORDER BY allog DESC LIMIT 1",
                     sql_table('plugin_analyze_log'),
-                    $alip
+                    sql_real_escape_string($alip)
                 )
             );
         }
@@ -1498,11 +1498,11 @@ class NP_Analyze extends NucleusPlugin
             sprintf(
                 "INSERT INTO %s (alid, aldate, alip, alreferer, alword) VALUES ('%s', '%s', '%s', '%s', '%s')",
                 sql_table('plugin_analyze_log'),
-                addslashes($alid),
+                sql_real_escape_string($alid),
                 $aldate,
-                addslashes($alip),
-                addslashes($alreferer),
-                addslashes($alword)
+                sql_real_escape_string($alip),
+                sql_real_escape_string($alreferer),
+                sql_real_escape_string($alword)
             )
         );
     }
@@ -1620,7 +1620,7 @@ class NP_Analyze extends NucleusPlugin
         $fields = mysql_num_fields($rs);
         while ($row = mysql_fetch_array($rs)) {
             for ($j = 0; $j < $fields; $j++) {
-                $data0 .= sprintf('"%s"', addslashes($row[$j]));
+                $data0 .= sprintf('"%s"', $row[$j]);
                 if ($j < $fields - 1) {
                     $data0 .= ',';
                 }
