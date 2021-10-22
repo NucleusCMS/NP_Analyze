@@ -758,72 +758,64 @@ class NP_Analyze extends NucleusPlugin
             $subcatid = (int)$subcatid;
         }
         $icon = substr($_SERVER['REQUEST_URI'], -4, 4);
-        switch (TRUE) {
-            case ($itemid):
-                $alid = 'i?' . $itemid . '?';
-                break;
-            case ($skindata['type'] === 'error'):
-                $alid = 'e?' . $itemid . '?';
-                break;
-            case ($skindata['type'] === 'imagepopup'):
-                $alid = 'im?';
-                break;
-            case ($memberid):
-                $alid = 'm?' . $memberid . '?';
-                break;
-            case ($skindata['type'] === 'search'):
-                $order = (_CHARSET === 'EUC-JP') ? 'EUC-JP, UTF-8' : 'UTF-8, EUC-JP';
-                $post = mb_convert_encoding($query, _CHARSET, $order . ', JIS, SJIS, ASCII');
-                $alid = 's?' . $blogid . '?' . $post;
-                break;
-            case ($archive):
-                $alid = 'a?' . $archive . '/' . $blogid . '?';
-                break;
-            case ($archivelist):
-                $alid = 'l?' . $archivelist . '?';
-                break;
-            case ($subcatid):
-                $alid = 'sb?' . $subcatid . '?';
-                break;
-            case ($catid):
-                $alid = 'c?' . $catid . '?';
-                break;
-            case ($icon === '.ico'):
-                return;
-            default:
-                foreach ($skindata['skin'] as $skins => $id) {
-                    if ($skins === 'contentType') {
-                        $skin = $id;
-                    }
+        if($itemid) {
+            $alid = 'i?' . $itemid . '?';
+        } elseif($skindata['type'] === 'error') {
+            $alid = 'e?' . $itemid . '?';
+        } elseif($skindata['type'] === 'imagepopup') {
+            $alid = 'im?';
+        } elseif($memberid) {
+            $alid = 'm?' . $memberid . '?';
+        } elseif($skindata['type'] === 'search') {
+            $order = (_CHARSET === 'EUC-JP') ? 'EUC-JP, UTF-8' : 'UTF-8, EUC-JP';
+            $post = mb_convert_encoding($query, _CHARSET, $order . ', JIS, SJIS, ASCII');
+            $alid = 's?' . $blogid . '?' . $post;
+        } elseif($archive) {
+            $alid = 'a?' . $archive . '/' . $blogid . '?';
+        } elseif($archivelist) {
+            $alid = 'l?' . $archivelist . '?';
+        } elseif($subcatid) {
+            $alid = 'sb?' . $subcatid . '?';
+        } elseif($catid) {
+            $alid = 'c?' . $catid . '?';
+        } elseif($icon === '.ico') {
+            return;
+        } else {
+            foreach ($skindata['skin'] as $skins => $id) {
+                if ($skins === 'contentType') {
+                    $skin = $id;
                 }
-                if ($skin !== 'text/html') {
-                    $alid = 'r?';
-                } else {
-                    if ($manager->pluginInstalled('NP_MultiTags')) {
-                        $que = quickQuery(
-                            sprintf(
-                                "SELECT odef as result FROM %s, %s"
-                                . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
-                                sql_table('plugin'),
-                                sql_table('plugin_option_desc')
-                            )
-                        );
-                        if ($CONF['URLMode'] === 'normal') {
-                            $tag = $_GET[$que];
-                        } else {
-                            $lq = explode('/' . $que . '/', $_SERVER['REQUEST_URI']);
-                            $lr = explode('/', $lq[1]);
-                            $ls = explode('?', $lr[0]);
-                            $tag = $ls[0];
-                        }
-                    }
-                    if ($tag == '') {
-                        $alid = 'b?' . $blogid . '?' . $_SERVER['REQUEST_URI'];
+            }
+            if ($skin !== 'text/html') {
+                $alid = 'r?';
+            } else {
+                if ($manager->pluginInstalled('NP_MultiTags')) {
+                    $que = quickQuery(
+                        sprintf(
+                            "SELECT odef as result FROM %s, %s"
+                            . " WHERE opid=pid and oname='tag_query' and pfile='NP_MultiTags'",
+                            sql_table('plugin'),
+                            sql_table('plugin_option_desc')
+                        )
+                    );
+                    if ($CONF['URLMode'] === 'normal') {
+                        $tag = $_GET[$que];
                     } else {
-                        $alid = 'mt?' . $blogid . '?' . $tag;
+                        $lq = explode('/' . $que . '/', $_SERVER['REQUEST_URI']);
+                        $lr = explode('/', $lq[1]);
+                        $ls = explode('?', $lr[0]);
+                        $tag = $ls[0];
                     }
                 }
+                if ($tag == '') {
+                    $alid = 'b?' . $blogid . '?' . $_SERVER['REQUEST_URI'];
+                } else {
+                    $alid = 'mt?' . $blogid . '?' . $tag;
+                }
+            }
+
         }
+
         $alip = @gethostbyaddr($_SERVER['REMOTE_ADDR']);
         $aldate = date("Y-m-d H:i:s", time() + ($this->getOption('alz_time_d') * 3600));
         $t0y = date("Y", strtotime($aldate));
@@ -839,92 +831,89 @@ class NP_Analyze extends NucleusPlugin
                 )
             );
         }
-        switch (TRUE) {
-            case (!$_SERVER['HTTP_REFERER']):
-                $alreferer = '';
-                break;
-            case ($alref1):
-                if ($alid == $alref1) {
-                    return;
+        if(!$_SERVER['HTTP_REFERER']) {
+            $alreferer = '';
+        } elseif($alref1) {
+            if ($alid == $alref1) {
+                return;
+            }
+            $alreferer = $alref1;
+        } else {
+            // Search engines (thanks for Osamu Higuchi. http://www.higuchi.com/item/150 )
+            $ref_a = explode('//', $_SERVER['HTTP_REFERER'], 2);
+            $ref_b = explode('/', $ref_a[1], 2);
+            $search_q = explode('?', $ref_b[1]);
+            $search_que = explode('&', $search_q[1]);
+            $s_que = array();
+            foreach ($search_que as $search_q) {
+                list($col, $val) = split('=', $search_q);
+                $s_que[$col] = urldecode($val);
+            }
+            $engines = array(
+                "216\.239\.[0-9]+\.10[0-9]" => 'Google',
+                "images\.google\." => 'GoogleIMG',
+                "\.google\." => 'Google',
+                "search-kids\.yahoo\." => 'Yahoo!kids',
+                "search\.yahoo\." => 'Yahoo!',
+                "search\.[a-zA-Z0-9_]+\.msn\." => 'msn',
+                "search\.msn\." => 'msn',
+                "goo\.ne\.jp$" => 'goo',
+                "infobee\.ne\.jp$" => 'goo',
+                "infoseek\.co\.jp$" => 'infoseek',
+                "\.excite\.co\.jp$" => 'Excite',
+                "search\.fresheye\.com$" => 'freshEYE',
+                "search\.nifty\.com" => '@nifty',
+                "search\.biglobe\.ne\.jp$" => 'BIGLOBE',
+                "ask\.jp$" => 'ask',
+                "ask\.com$" => 'ask',
+                "\.alltheweb\.com$" => 'AlltheWeb',
+                "\.alexa.com$" => 'Alexa',
+                "\.attens.net$" => 'AT&T',
+                "search\.naver\." => 'NAVER'
+            );
+            foreach ($engines as $engine => $engin) {
+                if (preg_match("/$engine/", $ref_b[0])) {
+                    $alref = $engin;
                 }
-                $alreferer = $alref1;
-                break;
-            default:
-                // Search engines (thanks for Osamu Higuchi. http://www.higuchi.com/item/150 )
-                $ref_a = explode('//', $_SERVER['HTTP_REFERER'], 2);
-                $ref_b = explode('/', $ref_a[1], 2);
-                $search_q = explode('?', $ref_b[1]);
-                $search_que = explode('&', $search_q[1]);
-                $s_que = array();
-                foreach ($search_que as $search_q) {
-                    list($col, $val) = split('=', $search_q);
-                    $s_que[$col] = urldecode($val);
-                }
-                $engines = array(
-                    "216\.239\.[0-9]+\.10[0-9]" => 'Google',
-                    "images\.google\." => 'GoogleIMG',
-                    "\.google\." => 'Google',
-                    "search-kids\.yahoo\." => 'Yahoo!kids',
-                    "search\.yahoo\." => 'Yahoo!',
-                    "search\.[a-zA-Z0-9_]+\.msn\." => 'msn',
-                    "search\.msn\." => 'msn',
-                    "goo\.ne\.jp$" => 'goo',
-                    "infobee\.ne\.jp$" => 'goo',
-                    "infoseek\.co\.jp$" => 'infoseek',
-                    "\.excite\.co\.jp$" => 'Excite',
-                    "search\.fresheye\.com$" => 'freshEYE',
-                    "search\.nifty\.com" => '@nifty',
-                    "search\.biglobe\.ne\.jp$" => 'BIGLOBE',
-                    "ask\.jp$" => 'ask',
-                    "ask\.com$" => 'ask',
-                    "\.alltheweb\.com$" => 'AlltheWeb',
-                    "\.alexa.com$" => 'Alexa',
-                    "\.attens.net$" => 'AT&T',
-                    "search\.naver\." => 'NAVER'
-                );
-                foreach ($engines as $engine => $engin) {
-                    if (preg_match("/$engine/", $ref_b[0])) {
-                        $alref = $engin;
-                    }
-                }
-                $enco = _CHARSET;
-                $s_encode = 'EUC-JP, SJIS, UTF-8, JIS, ASCII';
-                if ($alref === "GoogleIMG") {
-                    $al_f = "Google";
-                } elseif ($alref === "Yahoo!kids") {
-                    $al_f = "Yahoo!";
-                } else {
-                    $al_f = $alref;
-                }
-                if ($al_f === "Google") {
-                    $alword = mb_convert_encoding($s_que['q'] . $s_que['as_q'] . $s_que['as_epq'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
-                } elseif ($al_f === "Yahoo!") {
-                    $s_encode = ($s_que['ei']) ? $s_que['ei'] : $s_encode;
-                    $alword = mb_convert_encoding($s_que['p'] . $s_que['va'], $enco, $s_encode);
-                } elseif ($al_f === "msn") {
-                    $alword = mb_convert_encoding($s_que['q'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
-                } elseif ($al_f === "goo") {
-                    $alword = mb_convert_encoding($s_que['MT'], $enco, $s_encode);
-                } elseif ($al_f === "infoseek") {
-                    $s_encode = ($s_que['enc']) ? $s_que['enc'] : $s_encode;
-                    $alword = mb_convert_encoding($s_que['qt'], $enco, $s_encode);
-                } elseif ($al_f === "Excite") {
-                    $alword = mb_convert_encoding($s_que['search'] . $s_que['s'], $enco, 'SJIS, UTF-8, EUC-JP, JIS, ASCII');
-                } elseif ($al_f === "freshEYE") {
-                    $alword = mb_convert_encoding($s_que['kw'], $enco, $s_encode);
-                } elseif ($al_f === "@nifty") {
-                    $alword = mb_convert_encoding($s_que['Text'], $enco, 'EUC-JP, JIS, SJIS, UTF-8, ASCII');
-                } elseif ($al_f === "BIGLOBE") {
-                    $alword = mb_convert_encoding($s_que['q'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
-                } elseif ($al_f === "ask") {
-                    $alword = mb_convert_encoding($s_que['q'] . $s_que['query'], $enco, 'UTF-8');
-                } elseif ($al_f === "AlltheWeb") {
-                    $s_encode = ($s_que['cs']) ? $s_que['cs'] : $s_encode;
-                    $alword = mb_convert_encoding($s_que['q'], $enco, $s_encode);
-                } elseif ($al_f === "NAVER") {
-                    $alword = mb_convert_encoding($s_que['query'], $enco, $s_encode);
-                }
-                $alreferer = ($alword) ? 'en?' . $alref . '?' : $_SERVER['HTTP_REFERER'];
+            }
+            $enco = _CHARSET;
+            $s_encode = 'EUC-JP, SJIS, UTF-8, JIS, ASCII';
+            if ($alref === "GoogleIMG") {
+                $al_f = "Google";
+            } elseif ($alref === "Yahoo!kids") {
+                $al_f = "Yahoo!";
+            } else {
+                $al_f = $alref;
+            }
+            if ($al_f === "Google") {
+                $alword = mb_convert_encoding($s_que['q'] . $s_que['as_q'] . $s_que['as_epq'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
+            } elseif ($al_f === "Yahoo!") {
+                $s_encode = ($s_que['ei']) ? $s_que['ei'] : $s_encode;
+                $alword = mb_convert_encoding($s_que['p'] . $s_que['va'], $enco, $s_encode);
+            } elseif ($al_f === "msn") {
+                $alword = mb_convert_encoding($s_que['q'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
+            } elseif ($al_f === "goo") {
+                $alword = mb_convert_encoding($s_que['MT'], $enco, $s_encode);
+            } elseif ($al_f === "infoseek") {
+                $s_encode = ($s_que['enc']) ? $s_que['enc'] : $s_encode;
+                $alword = mb_convert_encoding($s_que['qt'], $enco, $s_encode);
+            } elseif ($al_f === "Excite") {
+                $alword = mb_convert_encoding($s_que['search'] . $s_que['s'], $enco, 'SJIS, UTF-8, EUC-JP, JIS, ASCII');
+            } elseif ($al_f === "freshEYE") {
+                $alword = mb_convert_encoding($s_que['kw'], $enco, $s_encode);
+            } elseif ($al_f === "@nifty") {
+                $alword = mb_convert_encoding($s_que['Text'], $enco, 'EUC-JP, JIS, SJIS, UTF-8, ASCII');
+            } elseif ($al_f === "BIGLOBE") {
+                $alword = mb_convert_encoding($s_que['q'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
+            } elseif ($al_f === "ask") {
+                $alword = mb_convert_encoding($s_que['q'] . $s_que['query'], $enco, 'UTF-8');
+            } elseif ($al_f === "AlltheWeb") {
+                $s_encode = ($s_que['cs']) ? $s_que['cs'] : $s_encode;
+                $alword = mb_convert_encoding($s_que['q'], $enco, $s_encode);
+            } elseif ($al_f === "NAVER") {
+                $alword = mb_convert_encoding($s_que['query'], $enco, $s_encode);
+            }
+            $alreferer = ($alword) ? 'en?' . $alref . '?' : $_SERVER['HTTP_REFERER'];
         }
 
         // Count
@@ -1875,21 +1864,17 @@ class NP_Analyze extends NucleusPlugin
         }
         $numb = strlen($select);
         $other = htmlspecialchars($other);
-        switch (TRUE) {
-            case ($past === '+'):
-                $url = '';
-                break;
-            case ($CONF['URLMode'] === 'normal'):
-                $url = $CONF['IndexURL'] . 'index.php';
-                break;
-            default:
-                $url = substr($CONF['IndexURL'], 0, -1);
+        if ($past === '+') {
+            $url = '';
+        } elseif ($CONF['URLMode'] === 'normal') {
+            $url = $CONF['IndexURL'] . 'index.php';
+        } else {
+            $url = substr($CONF['IndexURL'], 0, -1);
         }
         $que1 = ($numb > 3) ? substr($select, 0, 60) : $select . '?' . $id;
         if ($other && $other != 1 && $numb < 10 && $select !== 'mt') {
             $que1 .= '?' . $other;
         }
-        $sort = ($_GET['sort'] === 'ASC') ? 'DESC' : 'ASC';
         if ($select === 'a') {
             $asa = explode('/', $id);
             $id = $asa[1];
@@ -1919,7 +1904,7 @@ class NP_Analyze extends NucleusPlugin
             if ($past !== '+') {
                 $change = '<strong>I.</strong>';
             }
-            $change .= ($apname)
+            $change .= $apname
                 ? sprintf(
                     '<a href="%s%s" title="%s">%s</a>',
                     $url, createItemLink((int)$id), $apname, $this->oName($apname, $c)
