@@ -1620,14 +1620,20 @@ class NP_Analyze extends NucleusPlugin
         $fields = mysql_num_fields($rs);
         while ($row = mysql_fetch_array($rs)) {
             for ($j = 0; $j < $fields; $j++) {
-                $data0 .= '"' . addslashes($row[$j]) . '"';
+                $data0 .= sprintf('"%s"', addslashes($row[$j]));
                 if ($j < $fields - 1) {
                     $data0 .= ',';
                 }
             }
             $data0 .= "\n";
         }
-        $fp = @fopen($DIR_MEDIA . $this->getOption('alz_pastdir') . "/" . $mcsv . ".csv", "a");
+        $fp = @fopen(
+            sprintf(
+                '%s%s/%s.csv',
+                $DIR_MEDIA, $this->getOption('alz_pastdir'), $mcsv
+            ),
+            'ab'
+        );
         @fputs($fp, $data0);
         @fclose($fp);
         return;
@@ -1636,7 +1642,12 @@ class NP_Analyze extends NucleusPlugin
     function TempChange($past = '')
     {
         global $DIR_MEDIA;
-        $lines = @file($DIR_MEDIA . $this->getOption('alz_pastdir') . "/" . $past . ".csv");
+        $lines = @file(
+            sprintf(
+                '%s%s/%s.csv',
+                $DIR_MEDIA, $this->getOption('alz_pastdir'), $past
+            )
+        );
         if ($this->getOption('alz_temp') !== 'yes' || !$lines) {
             return;
         }
@@ -1660,7 +1671,9 @@ class NP_Analyze extends NucleusPlugin
         }
         for ($j = 0; $j <= $k; $j++) {
             $c_temp[$j] = substr($c_temp[$j], 0, -1);
-            sql_query("INSERT INTO " . $tem . " VALUES " . $c_temp[$j]);
+            sql_query(
+                sprintf('INSERT INTO %s VALUES %s', $tem, $c_temp[$j])
+            );
         }
     }
 
@@ -1675,7 +1688,10 @@ class NP_Analyze extends NucleusPlugin
         if (!$id) {
             $id = 'total';
         }
-        $today_c = " as result FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '')";
+        $today_c = sprintf(
+            " as result FROM %s WHERE NOT(%salip = '')",
+            sql_table('plugin_analyze_log'), $this->ExRobo('alip')
+        );
         if ($id === 'all') {
             $today_v = mysql_num_rows(
                 sql_query(
@@ -1798,26 +1814,23 @@ class NP_Analyze extends NucleusPlugin
         if (!$acount) {
             $acount = ($ac) ? $ac : 18;
         }
+
         if ($ref_a[0] === 'http:') {
-            $apname1 = mb_strimwidth($apname, 0, $acount, '..');
-        } else {
-            if (_CHARSET === 'EUC-JP') {
-                $apname1 = mb_strimwidth($apname, 0, $acount, '..', euc);
-            } else {
-                $apname1 = mb_strimwidth($apname, 0, $acount, '..', utf8);
-            }
+            return mb_strimwidth($apname, 0, $acount, '..');
         }
-        //			$apname1 = htmlspecialchars(substr($apname, 0, $acount));
-        //htmlspecialchars(mb_substr($apname, 0, $acount));
-        //		if(mb_strlen($apname) > $acount) $apname1 .= '..';
-        return $apname1;
+
+        if (_CHARSET === 'EUC-JP') {
+            return mb_strimwidth($apname, 0, $acount, '..', euc);
+        }
+
+        return mb_strimwidth($apname, 0, $acount, '..', utf8);
     }
 
     function ChangeData($past = '', $que1 = '', $jd = '', $que = '', $hd = '', $bd = '')
     {
         global $CONF;
         if ($past === '+') {
-            return;
+            return null;
         }
         if ($que == 1) {
             $jd = '';
@@ -1829,7 +1842,7 @@ class NP_Analyze extends NucleusPlugin
             $chan = sprintf(
                 '<a href="%sanalyze/?select=g&amp;group=page&amp;query=%s&amp;past=%s">'
                 . '<img src="documentation/icon-up.gif" alt="link" title="%s%s" height="15" width="15"></a>',
-                $CONF['PluginURL'], $que1, $past, _NP_ANALYZE_PAGE, _NP_ANALYZE_GROUP1
+                $CONF['PluginURL'], $que1, urlencode($past), _NP_ANALYZE_PAGE, _NP_ANALYZE_GROUP1
             );
         }
         if ($this->getOption('alz_temp') === 'no' && ($past || $_GET['group'] === 'page')) {
@@ -1842,13 +1855,13 @@ class NP_Analyze extends NucleusPlugin
         $chan .= sprintf(
             ' <a href="%sanalyze/?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=%s&amp;query=%s%s&amp;jd=%s">'
             . '<img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="%s"></a>',
-            $CONF['PluginURL'], $past, $que1, $jd, $past, _NP_ANALYZE_EXTRACT
+            $CONF['PluginURL'], urlencode($past), $que1, $jd, urlencode($past), _NP_ANALYZE_EXTRACT
         );
         if ($que && $que != 1) {
             $chan .= sprintf(
                 '%s <a href="%sanalyze/?select=b&amp;sort=ASC&amp;fie=aldate&amp;page=1&amp;past=%s&amp;query=%s">'
                 . '<img src="documentation/icon-help.gif" alt="link" height="15" width="15" title="%s : %s"></a>',
-                $que, $CONF['PluginURL'], $past, $que, _NP_ANALYZE_EXTRACT, $que
+                $que, $CONF['PluginURL'], urlencode($past), $que, _NP_ANALYZE_EXTRACT, $que
             );
         }
         return $chan;
@@ -1858,7 +1871,7 @@ class NP_Analyze extends NucleusPlugin
     {
         global $CONF;
         if (!$past) {
-            $past = ($_GET['past']) ? addslashes($_GET['past']) : addslashes(postVar('past'));
+            $past = !empty($_GET['past']) ? $_GET['past'] : postVar('past');
         }
         $numb = strlen($select);
         $other = htmlspecialchars($other);
@@ -2187,7 +2200,7 @@ class NP_Analyze extends NucleusPlugin
         }
 
         if (!$select) {
-            return;
+            return null;
         }
         $select = htmlspecialchars($select);
         if (!$id) {
