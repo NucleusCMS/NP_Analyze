@@ -923,7 +923,7 @@ class NP_Analyze extends NucleusPlugin
                 sql_table('plugin_analyze_log')
             )
         );
-        
+
         $t1y = date("Y", strtotime($time1));
         $t1m = date("m", strtotime($time1));
         $t1d = date("d", strtotime($time1));
@@ -933,13 +933,10 @@ class NP_Analyze extends NucleusPlugin
             return;
         }
 
-        $mcsv = $t1y . '-' . $t1m;
-
         $adate = $t1y . '-' . $t1m . '-' . $t1d;
 
         // plugin_analyze_hit
         $ip_gri = " FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '') ";
-        $ip_grou = "SELECT alip, COUNT(allog) as count" . $ip_gri . "GROUP BY alip ORDER BY null";
         sql_query(
             sprintf(
                 "CREATE TEMPORARY TABLE ipgroup as SELECT alid, COUNT(allog) as count %s"
@@ -947,16 +944,18 @@ class NP_Analyze extends NucleusPlugin
                 $ip_gri
             )
         );
-        $ip_gri = "SELECT alip" . $ip_gri;
-        $ahhit = mysql_num_rows(sql_query($ip_gri));
+        $ahhit = mysql_num_rows(
+            sql_query("SELECT alip" . $ip_gri)
+        );
         $hit_range = explode('/', $this->getOption('alz_hit_range'));
         $today_h = mysql_num_rows(
             sql_query(
                 "SELECT * FROM " . sql_table('plugin_analyze_log')
             )
         );
-        $robot_t = $today_h - $this->Countting('today2');
-        $ip_group = sql_query($ip_grou);
+        $ip_group = sql_query(
+            "SELECT alip, COUNT(allog) as count" . $ip_gri . "GROUP BY alip ORDER BY null"
+        );
         $ahvisit = mysql_num_rows($ip_group);
         while ($row = mysql_fetch_assoc($ip_group)) {
             if ($row['count'] > $hit_range[3]) {
@@ -981,6 +980,7 @@ class NP_Analyze extends NucleusPlugin
             $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
             return;
         }
+        $robot_t = $today_h - $this->Countting('today2');
         sql_query(
             sprintf(
                 "INSERT INTO %s"
@@ -1005,15 +1005,15 @@ class NP_Analyze extends NucleusPlugin
                 sql_table('plugin_analyze_hit')
             )
         );
-        while ($res = mysql_fetch_assoc($result)) {
-            $ahvisit0 = $res['ahvisit'] + $ahvisit;
-            $ahhit0 = $res['ahhit'] + $ahhit;
-            $ahlevel10 = $res['ahlevel1'] + $ahlevel1;
-            $ahlevel20 = $res['ahlevel2'] + $ahlevel2;
-            $ahlevel30 = $res['ahlevel3'] + $ahlevel3;
-            $ahlevel40 = $res['ahlevel4'] + $ahlevel4;
-            $ahlevel50 = $res['ahlevel5'] + $ahlevel5;
-            $ahrobot0 = $res['ahrobot'] + $robot_t;
+        while ($row = mysql_fetch_assoc($result)) {
+            $ahvisit0 = $row['ahvisit'] + $ahvisit;
+            $ahhit0 = $row['ahhit'] + $ahhit;
+            $ahlevel10 = $row['ahlevel1'] + $ahlevel1;
+            $ahlevel20 = $row['ahlevel2'] + $ahlevel2;
+            $ahlevel30 = $row['ahlevel3'] + $ahlevel3;
+            $ahlevel40 = $row['ahlevel4'] + $ahlevel4;
+            $ahlevel50 = $row['ahlevel5'] + $ahlevel5;
+            $ahrobot0  = $row['ahrobot'] + $robot_t;
         }
         sql_query(
             sprintf(
@@ -1087,14 +1087,14 @@ class NP_Analyze extends NucleusPlugin
                 );
                 continue;
             }
-            while ($resr = mysql_fetch_assoc($ro)) {
+            while ($row = mysql_fetch_assoc($ro)) {
                 sql_query(
                     sprintf(
                         "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
                         . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
                         sql_table('plugin_analyze_robot'),
-                        $resr['arohit'] + $arohit,
-                        $resr['arovisit'] + $arovisit,
+                        $row['arohit'] + $arohit,
+                        $row['arovisit'] + $arovisit,
                         $adate,
                         $t1y,
                         $t1m,
@@ -1141,9 +1141,9 @@ class NP_Analyze extends NucleusPlugin
                     )
                 );
                 if (mysql_num_rows($roa)) {
-                    while ($resr = mysql_fetch_assoc($roa)) {
-                        $arohit0 = $resr['arohit'] + $rss_gr;
-                        $arovisit0 = $resr['arovisit'] + $arovisit;
+                    while ($row = mysql_fetch_assoc($roa)) {
+                        $arohit0 = $row['arohit'] + $rss_gr;
+                        $arovisit0 = $row['arovisit'] + $arovisit;
                         sql_query(
                             sprintf(
                                 "UPDATE %s SET arohit = %s, arovisit = %s, arodate = '%s'"
@@ -1216,7 +1216,15 @@ class NP_Analyze extends NucleusPlugin
             $this->SendMail($adate, $me1 . $me0 . $me2);
         }
 
-        $this->ChangeDate(sql_table('plugin_analyze_templog'), $t1y, $t1m, $mcsv, $adate, $t0m, $me2);
+        $this->ChangeDate(
+            sql_table('plugin_analyze_templog'),
+            $t1y,
+            $t1m,
+            $t1y . '-' . $t1m,
+            $adate,
+            $t0m,
+            $me2
+        );
         $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
     }
 
