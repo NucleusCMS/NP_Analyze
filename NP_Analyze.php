@@ -923,299 +923,301 @@ class NP_Analyze extends NucleusPlugin
                 sql_table('plugin_analyze_log')
             )
         );
+        
         $t1y = date("Y", strtotime($time1));
         $t1m = date("m", strtotime($time1));
         $t1d = date("d", strtotime($time1));
+
+        if ($t0y == $t1y && $t0m == $t1m && $t0d == $t1d) {
+            $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
+            return;
+        }
+
         $mcsv = $t1y . '-' . $t1m;
-        switch (TRUE) {
-            case ($t0y == $t1y && $t0m == $t1m && $t0d == $t1d):
-                $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
-                return;
-            default:
-                $adate = $t1y . '-' . $t1m . '-' . $t1d;
 
-                // plugin_analyze_hit
-                $ip_gri = " FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '') ";
-                $ip_grou = "SELECT alip, COUNT(allog) as count" . $ip_gri . "GROUP BY alip ORDER BY null";
+        $adate = $t1y . '-' . $t1m . '-' . $t1d;
+
+        // plugin_analyze_hit
+        $ip_gri = " FROM " . sql_table('plugin_analyze_log') . " WHERE NOT(" . $this->ExRobo('alip') . "alip = '') ";
+        $ip_grou = "SELECT alip, COUNT(allog) as count" . $ip_gri . "GROUP BY alip ORDER BY null";
+        sql_query(
+            sprintf(
+                "CREATE TEMPORARY TABLE ipgroup as SELECT alid, COUNT(allog) as count %s"
+                . " GROUP BY alip, alid ORDER BY null",
+                $ip_gri
+            )
+        );
+        $ip_gri = "SELECT alip" . $ip_gri;
+        $ahhit = mysql_num_rows(sql_query($ip_gri));
+        $hit_range = explode('/', $this->getOption('alz_hit_range'));
+        $today_h = mysql_num_rows(
+            sql_query(
+                "SELECT * FROM " . sql_table('plugin_analyze_log')
+            )
+        );
+        $robot_t = $today_h - $this->Countting('today2');
+        $ip_group = sql_query($ip_grou);
+        $ahvisit = mysql_num_rows($ip_group);
+        while ($row = mysql_fetch_assoc($ip_group)) {
+            if ($row['count'] > $hit_range[3]) {
+                $ahlevel5++;
+            } elseif ($row['count'] > $hit_range[2]) {
+                $ahlevel4++;
+            } elseif ($row['count'] > $hit_range[1]) {
+                $ahlevel3++;
+            } elseif ($row['count'] > $hit_range[0]) {
+                $ahlevel2++;
+            } else {
+                $ahlevel1++;
+            }
+        }
+        $c_time = quickQuery(
+            sprintf(
+                "SELECT ahdate as result FROM %s ORDER BY ahdate DESC LIMIT 1",
+                sql_table('plugin_analyze_hit')
+            )
+        );
+        if ($c_time == $adate) {
+            $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
+            return;
+        }
+        sql_query(
+            sprintf(
+                "INSERT INTO %s"
+                . " (ahdate, ahvisit, ahhit, ahlevel1, ahlevel2, ahlevel3, ahlevel4, ahlevel5, ahrobot)"
+                . " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+                sql_table('plugin_analyze_hit'),
+                $adate,
+                $ahvisit,
+                $ahhit,
+                $ahlevel1,
+                $ahlevel2,
+                $ahlevel3,
+                $ahlevel4,
+                $ahlevel5,
+                $robot_t
+            )
+        );
+        mysql_free_result($ip_group);
+        $result = sql_query(
+            sprintf(
+                "SELECT * FROM %s WHERE ahdate = '2000-01-01' LIMIT 1",
+                sql_table('plugin_analyze_hit')
+            )
+        );
+        while ($res = mysql_fetch_assoc($result)) {
+            $ahvisit0 = $res['ahvisit'] + $ahvisit;
+            $ahhit0 = $res['ahhit'] + $ahhit;
+            $ahlevel10 = $res['ahlevel1'] + $ahlevel1;
+            $ahlevel20 = $res['ahlevel2'] + $ahlevel2;
+            $ahlevel30 = $res['ahlevel3'] + $ahlevel3;
+            $ahlevel40 = $res['ahlevel4'] + $ahlevel4;
+            $ahlevel50 = $res['ahlevel5'] + $ahlevel5;
+            $ahrobot0 = $res['ahrobot'] + $robot_t;
+        }
+        sql_query(
+            sprintf(
+                "UPDATE %s"
+                . " SET ahvisit=%s,ahhit=%s,ahlevel1=%s,ahlevel2=%s,ahlevel3=%s,ahlevel4=%s,ahlevel5=%s,ahrobot=%s"
+                . " WHERE ahdate = '2000-01-01' LIMIT 1",
+                sql_table('plugin_analyze_hit'),
+                $ahvisit0,
+                $ahhit0,
+                $ahlevel10,
+                $ahlevel20,
+                $ahlevel30,
+                $ahlevel40,
+                $ahlevel50,
+                $ahrobot0
+            )
+        );
+        mysql_free_result($result);
+
+        // plugin_analyze_robot Main
+        $ng_gr = sql_query(
+            sprintf(
+                "SELECT anip, antitle FROM %s WHERE antitle != 'rss'",
+                sql_table('plugin_analyze_ng')
+            )
+        );
+        $robo1 = array();
+        while (list($anip, $antitle) = mysql_fetch_row($ng_gr)) {
+            $robo1[$anip] = $antitle;
+        }
+        mysql_free_result($ng_gr);
+        foreach ($robo1 as $robo1[0] => $robo1[1]) {
+            $arohit = 0;
+            $arovisit = 0;
+            $aroengine = $robo1[1];
+            $ip_gr = sql_query(
+                sprintf(
+                    "SELECT alip, COUNT(allog) as count FROM %s WHERE alip LIKE '%%%s%%' GROUP BY alip ORDER BY null",
+                    sql_table('plugin_analyze_log'),
+                    $robo1[0]
+                )
+            );
+            while ($row = mysql_fetch_assoc($ip_gr)) {
+                $arohit = $arohit + $row['count'];
+                $arovisit++;
+            }
+            mysql_free_result($ip_gr);
+            $ro = sql_query(
+                sprintf(
+                    "SELECT arohit, arovisit FROM %s WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
+                    sql_table('plugin_analyze_robot'),
+                    $t1y,
+                    $t1m,
+                    $aroengine
+                )
+            );
+            $ro1 = mysql_num_rows($ro);
+            if (!$arovisit) {
+                continue;
+            }
+            if (!$ro1) {
                 sql_query(
                     sprintf(
-                        "CREATE TEMPORARY TABLE ipgroup as SELECT alid, COUNT(allog) as count %s"
-                        . " GROUP BY alip, alid ORDER BY null",
-                        $ip_gri
-                    )
-                );
-                $ip_gri = "SELECT alip" . $ip_gri;
-                $ahhit = mysql_num_rows(sql_query($ip_gri));
-                $hit_range = explode('/', $this->getOption('alz_hit_range'));
-                $today_h = mysql_num_rows(
-                    sql_query(
-                        "SELECT * FROM " . sql_table('plugin_analyze_log')
-                    )
-                );
-                $robot_t = $today_h - $this->Countting('today2');
-                $ip_group = sql_query($ip_grou);
-                $ahvisit = mysql_num_rows($ip_group);
-                while ($row = mysql_fetch_assoc($ip_group)) {
-                    if ($row['count'] > $hit_range[3]) {
-                        $ahlevel5++;
-                    } elseif ($row['count'] > $hit_range[2]) {
-                        $ahlevel4++;
-                    } elseif ($row['count'] > $hit_range[1]) {
-                        $ahlevel3++;
-                    } elseif ($row['count'] > $hit_range[0]) {
-                        $ahlevel2++;
-                    } else {
-                        $ahlevel1++;
-                    }
-                }
-                $c_time = quickQuery(
-                    sprintf(
-                        "SELECT ahdate as result FROM %s ORDER BY ahdate DESC LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-                if ($c_time == $adate) {
-                    $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
-                    return;
-                }
-                sql_query(
-                    sprintf(
-                        "INSERT INTO %s"
-                        . " (ahdate, ahvisit, ahhit, ahlevel1, ahlevel2, ahlevel3, ahlevel4, ahlevel5, ahrobot)"
-                        . " VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
-                        sql_table('plugin_analyze_hit'),
+                        "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s')",
+                        sql_table('plugin_analyze_robot'),
+                        $aroengine,
                         $adate,
-                        $ahvisit,
-                        $ahhit,
-                        $ahlevel1,
-                        $ahlevel2,
-                        $ahlevel3,
-                        $ahlevel4,
-                        $ahlevel5,
-                        $robot_t
+                        $arohit,
+                        $arovisit
                     )
                 );
-                mysql_free_result($ip_group);
-                $result = sql_query(
-                    sprintf(
-                        "SELECT * FROM %s WHERE ahdate = '2000-01-01' LIMIT 1",
-                        sql_table('plugin_analyze_hit')
-                    )
-                );
-                while ($res = mysql_fetch_assoc($result)) {
-                    $ahvisit0 = $res['ahvisit'] + $ahvisit;
-                    $ahhit0 = $res['ahhit'] + $ahhit;
-                    $ahlevel10 = $res['ahlevel1'] + $ahlevel1;
-                    $ahlevel20 = $res['ahlevel2'] + $ahlevel2;
-                    $ahlevel30 = $res['ahlevel3'] + $ahlevel3;
-                    $ahlevel40 = $res['ahlevel4'] + $ahlevel4;
-                    $ahlevel50 = $res['ahlevel5'] + $ahlevel5;
-                    $ahrobot0 = $res['ahrobot'] + $robot_t;
-                }
+                continue;
+            }
+            while ($resr = mysql_fetch_assoc($ro)) {
                 sql_query(
                     sprintf(
-                        "UPDATE %s"
-                        . " SET ahvisit=%s,ahhit=%s,ahlevel1=%s,ahlevel2=%s,ahlevel3=%s,ahlevel4=%s,ahlevel5=%s,ahrobot=%s"
-                        . " WHERE ahdate = '2000-01-01' LIMIT 1",
-                        sql_table('plugin_analyze_hit'),
-                        $ahvisit0,
-                        $ahhit0,
-                        $ahlevel10,
-                        $ahlevel20,
-                        $ahlevel30,
-                        $ahlevel40,
-                        $ahlevel50,
-                        $ahrobot0
+                        "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
+                        . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
+                        sql_table('plugin_analyze_robot'),
+                        $resr['arohit'] + $arohit,
+                        $resr['arovisit'] + $arovisit,
+                        $adate,
+                        $t1y,
+                        $t1m,
+                        $aroengine
                     )
                 );
-                mysql_free_result($result);
+            }
+        }
 
-                // plugin_analyze_robot Main
-                $ng_gr = sql_query(
+        // plugin_analyze_robot RSS
+        $rss_g = quickQuery(
+            sprintf(
+                "SELECT antitle as result FROM %s WHERE antitle = 'rss' LIMIT 1",
+                sql_table('plugin_analyze_ng')
+            )
+        );
+        if ($rss_g) {
+            sql_query(
+                sprintf(
+                    "CREATE TEMPORARY TABLE rss_group as SELECT alip, COUNT(allog) as count"
+                    . " FROM %s WHERE alid = 'r?' GROUP BY alip, alid ORDER BY null",
+                    sql_table('plugin_analyze_log')
+                )
+            );
+            $arovisit = mysql_num_rows(
+                sql_query(
+                    "SELECT COUNT(count) as count FROM rss_group GROUP BY alip ORDER BY null"
+                )
+            );
+            if ($arovisit) {
+                $roa = sql_query(
                     sprintf(
-                        "SELECT anip, antitle FROM %s WHERE antitle != 'rss'",
-                        sql_table('plugin_analyze_ng')
+                        "SELECT arohit, arovisit FROM %s"
+                        . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='XML-RSS' LIMIT 1",
+                        sql_table('plugin_analyze_robot'),
+                        $t1y,
+                        $t1m
                     )
                 );
-                $robo1 = array();
-                while (list($anip, $antitle) = mysql_fetch_row($ng_gr)) {
-                    $robo1[$anip] = $antitle;
-                }
-                mysql_free_result($ng_gr);
-                foreach ($robo1 as $robo1[0] => $robo1[1]) {
-                    $arohit = 0;
-                    $arovisit = 0;
-                    $aroengine = $robo1[1];
-                    $ip_gr = sql_query(
-                        sprintf(
-                            "SELECT alip, COUNT(allog) as count FROM %s WHERE alip LIKE '%%%s%%' GROUP BY alip ORDER BY null",
-                            sql_table('plugin_analyze_log'),
-                            $robo1[0]
-                        )
-                    );
-                    while ($row = mysql_fetch_assoc($ip_gr)) {
-                        $arohit = $arohit + $row['count'];
-                        $arovisit++;
-                    }
-                    mysql_free_result($ip_gr);
-                    $ro = sql_query(
-                        sprintf(
-                            "SELECT arohit, arovisit FROM %s WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
-                            sql_table('plugin_analyze_robot'),
-                            $t1y,
-                            $t1m,
-                            $aroengine
-                        )
-                    );
-                    $ro1 = mysql_num_rows($ro);
-                    if (!$arovisit) {
-                        continue;
-                    }
-                    if (!$ro1) {
-                        sql_query(
-                            sprintf(
-                                "INSERT INTO %s VALUES ('%s', '%s', '%s', '%s')",
-                                sql_table('plugin_analyze_robot'),
-                                $aroengine,
-                                $adate,
-                                $arohit,
-                                $arovisit
-                            )
-                        );
-                        continue;
-                    }
-                    while ($resr = mysql_fetch_assoc($ro)) {
-                        sql_query(
-                            sprintf(
-                                "UPDATE %s SET arohit=%s, arovisit=%s, arodate='%s'"
-                                . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='%s' LIMIT 1",
-                                sql_table('plugin_analyze_robot'),
-                                $resr['arohit'] + $arohit,
-                                $resr['arovisit'] + $arovisit,
-                                $adate,
-                                $t1y,
-                                $t1m,
-                                $aroengine
-                            )
-                        );
-                    }
-                }
-
-                // plugin_analyze_robot RSS
-                $rss_g = quickQuery(
+                $rss_gr = quickQuery(
                     sprintf(
-                        "SELECT antitle as result FROM %s WHERE antitle = 'rss' LIMIT 1",
-                        sql_table('plugin_analyze_ng')
+                        "SELECT COUNT(allog) as result FROM %s WHERE alid = 'r?' GROUP BY alid ORDER BY null",
+                        sql_table('plugin_analyze_log')
                     )
                 );
-                if ($rss_g) {
-                    sql_query(
-                        sprintf(
-                            "CREATE TEMPORARY TABLE rss_group as SELECT alip, COUNT(allog) as count"
-                            . " FROM %s WHERE alid = 'r?' GROUP BY alip, alid ORDER BY null",
-                            sql_table('plugin_analyze_log')
-                        )
-                    );
-                    $arovisit = mysql_num_rows(
+                if (mysql_num_rows($roa)) {
+                    while ($resr = mysql_fetch_assoc($roa)) {
+                        $arohit0 = $resr['arohit'] + $rss_gr;
+                        $arovisit0 = $resr['arovisit'] + $arovisit;
                         sql_query(
-                            "SELECT COUNT(count) as count FROM rss_group GROUP BY alip ORDER BY null"
-                        )
-                    );
-                    if ($arovisit) {
-                        $roa = sql_query(
                             sprintf(
-                                "SELECT arohit, arovisit FROM %s"
+                                "UPDATE %s SET arohit = %s, arovisit = %s, arodate = '%s'"
                                 . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='XML-RSS' LIMIT 1",
                                 sql_table('plugin_analyze_robot'),
+                                $arohit0,
+                                $arovisit0,
+                                $adate,
                                 $t1y,
                                 $t1m
                             )
                         );
-                        $rss_gr = quickQuery(
-                            sprintf(
-                                "SELECT COUNT(allog) as result FROM %s WHERE alid = 'r?' GROUP BY alid ORDER BY null",
-                                sql_table('plugin_analyze_log')
-                            )
-                        );
-                        if (mysql_num_rows($roa)) {
-                            while ($resr = mysql_fetch_assoc($roa)) {
-                                $arohit0 = $resr['arohit'] + $rss_gr;
-                                $arovisit0 = $resr['arovisit'] + $arovisit;
-                                sql_query(
-                                    sprintf(
-                                        "UPDATE %s SET arohit = %s, arovisit = %s, arodate = '%s'"
-                                        . " WHERE LEFT(arodate, 7)='%s-%s' and aroengine='XML-RSS' LIMIT 1",
-                                        sql_table('plugin_analyze_robot'),
-                                        $arohit0,
-                                        $arovisit0,
-                                        $adate,
-                                        $t1y,
-                                        $t1m
-                                    )
-                                );
-                            }
-                        } else {
-                            sql_query(
-                                sprintf(
-                                    "INSERT INTO %s VALUES ('XML-RSS', '%s', '%s', '%s')",
-                                    sql_table('plugin_analyze_robot'),
-                                    $adate,
-                                    $rss_gr,
-                                    $arovisit
-                                )
-                            );
-                        }
                     }
+                } else {
+                    sql_query(
+                        sprintf(
+                            "INSERT INTO %s VALUES ('XML-RSS', '%s', '%s', '%s')",
+                            sql_table('plugin_analyze_robot'),
+                            $adate,
+                            $rss_gr,
+                            $arovisit
+                        )
+                    );
                 }
-
-                // LogTable change
-                if ($this->TableExists(sql_table('plugin_analyze_templog'))) {
-                    sql_query("DROP TABLE " . sql_table('plugin_analyze_templog'));
-                }
-                sql_query(
-                    sprintf(
-                        "CREATE TABLE %s as SELECT * FROM %s",
-                        sql_table('plugin_analyze_templog'),
-                        sql_table('plugin_analyze_log')
-                    )
-                );
-                sql_query(
-                    sprintf(
-                        "DELETE FROM %s WHERE %salip = ''",
-                        sql_table('plugin_analyze_templog'),
-                        $this->ExRobo('alip', '2')
-                    )
-                );
-                sql_query("OPTIMIZE TABLE " . sql_table('plugin_analyze_templog'));
-                sql_query("TRUNCATE TABLE " . sql_table('plugin_analyze_log'));
-
-                // E-mail dairy report
-                if ($this->getOption('alz_report') === 'yes' || $this->getOption('alz_report_m') === 'yes') {
-                    $me1 = "[Today's Access]\n\n";
-                    $me1 .= "Hit : " . number_format($ahvisit) . "\n";
-                    $me1 .= "PV : " . number_format($ahhit) . "\n\n";
-                    $me1 .= "lev.1 : " . number_format($ahlevel1) . "\n";
-                    $me1 .= "lev.2 : " . number_format($ahlevel2) . "\n";
-                    $me1 .= "lev.3 : " . number_format($ahlevel3) . "\n";
-                    $me1 .= "lev.4 : " . number_format($ahlevel4) . "\n";
-                    $me1 .= "lev.5 : " . number_format($ahlevel5) . "\n\n\n";
-                    $me2 = "[Total Access]\n\n";
-                    $me2 .= "Hit : " . number_format($ahvisit0) . "\n";
-                    $me2 .= "PV : " . number_format($ahhit0) . "\n\n";
-                    $me2 .= "lev.1 : " . number_format($ahlevel10) . "\n";
-                    $me2 .= "lev.2 : " . number_format($ahlevel20) . "\n";
-                    $me2 .= "lev.3 : " . number_format($ahlevel30) . "\n";
-                    $me2 .= "lev.4 : " . number_format($ahlevel40) . "\n";
-                    $me2 .= "lev.5 : " . number_format($ahlevel50) . "\n\n\n";
-                    if ($t0m != $t1m && $this->getOption('alz_report_m') === 'yes') {
-                        $me0 = SendMailMonth($t1y, $t1m);
-                    }
-                    $this->SendMail($adate, $me1 . $me0 . $me2);
-                }
-
-                $this->ChangeDate(sql_table('plugin_analyze_templog'), $t1y, $t1m, $mcsv, $adate, $t0m, $me2);
-                $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
+            }
         }
+
+        // LogTable change
+        if ($this->TableExists(sql_table('plugin_analyze_templog'))) {
+            sql_query("DROP TABLE " . sql_table('plugin_analyze_templog'));
+        }
+        sql_query(
+            sprintf(
+                "CREATE TABLE %s as SELECT * FROM %s",
+                sql_table('plugin_analyze_templog'),
+                sql_table('plugin_analyze_log')
+            )
+        );
+        sql_query(
+            sprintf(
+                "DELETE FROM %s WHERE %salip = ''",
+                sql_table('plugin_analyze_templog'),
+                $this->ExRobo('alip', '2')
+            )
+        );
+        sql_query("OPTIMIZE TABLE " . sql_table('plugin_analyze_templog'));
+        sql_query("TRUNCATE TABLE " . sql_table('plugin_analyze_log'));
+
+        // E-mail dairy report
+        if ($this->getOption('alz_report') === 'yes' || $this->getOption('alz_report_m') === 'yes') {
+            $me1 = "[Today's Access]\n\n";
+            $me1 .= "Hit : " . number_format($ahvisit) . "\n";
+            $me1 .= "PV : " . number_format($ahhit) . "\n\n";
+            $me1 .= "lev.1 : " . number_format($ahlevel1) . "\n";
+            $me1 .= "lev.2 : " . number_format($ahlevel2) . "\n";
+            $me1 .= "lev.3 : " . number_format($ahlevel3) . "\n";
+            $me1 .= "lev.4 : " . number_format($ahlevel4) . "\n";
+            $me1 .= "lev.5 : " . number_format($ahlevel5) . "\n\n\n";
+            $me2 = "[Total Access]\n\n";
+            $me2 .= "Hit : " . number_format($ahvisit0) . "\n";
+            $me2 .= "PV : " . number_format($ahhit0) . "\n\n";
+            $me2 .= "lev.1 : " . number_format($ahlevel10) . "\n";
+            $me2 .= "lev.2 : " . number_format($ahlevel20) . "\n";
+            $me2 .= "lev.3 : " . number_format($ahlevel30) . "\n";
+            $me2 .= "lev.4 : " . number_format($ahlevel40) . "\n";
+            $me2 .= "lev.5 : " . number_format($ahlevel50) . "\n\n\n";
+            if ($t0m != $t1m && $this->getOption('alz_report_m') === 'yes') {
+                $me0 = SendMailMonth($t1y, $t1m);
+            }
+            $this->SendMail($adate, $me1 . $me0 . $me2);
+        }
+
+        $this->ChangeDate(sql_table('plugin_analyze_templog'), $t1y, $t1m, $mcsv, $adate, $t0m, $me2);
+        $this->orDie($alid, $aldate, $alip, $alreferer, $alword);
     }
 
     function doTemplateVar(&$item)
