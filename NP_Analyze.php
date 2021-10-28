@@ -745,18 +745,23 @@ class NP_Analyze extends NucleusPlugin
     function event_PreSkinParse(&$skindata)
     {
         global $CONF, $blogid, $catid, $itemid, $member, $memberid, $archive, $manager, $archivelist, $query;
+
+        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') === 'no') {
+            return;
+        }
+
         $blogid = (int)$blogid;
         $catid = (int)$catid;
         $itemid = (int)$itemid;
         $archivelist = (int)$archivelist;
-        if ($member->isLoggedIn() && $this->getOption('alz_loggedin') === 'no') {
-            return;
-        }
-        $mact = $manager->pluginInstalled('NP_MultipleCategories');
-        if ($mact) {
+
+        if ($manager->pluginInstalled('NP_MultipleCategories')) {
             global $subcatid;
             $subcatid = (int)$subcatid;
+        } else {
+            $subcatid = null;
         }
+
         $icon = substr($_SERVER['REQUEST_URI'], -4, 4);
         if($itemid) {
             $alid = 'i?' . $itemid . '?';
@@ -813,7 +818,6 @@ class NP_Analyze extends NucleusPlugin
                     $alid = 'mt?' . $blogid . '?' . $tag;
                 }
             }
-
         }
 
         $alip = @gethostbyaddr($_SERVER['REMOTE_ADDR']);
@@ -888,14 +892,14 @@ class NP_Analyze extends NucleusPlugin
             if ($al_f === "Google") {
                 $alword = mb_convert_encoding($s_que['q'] . $s_que['as_q'] . $s_que['as_epq'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
             } elseif ($al_f === "Yahoo!") {
-                $s_encode = ($s_que['ei']) ? $s_que['ei'] : $s_encode;
+                $s_encode = $s_que['ei'] ?: $s_encode;
                 $alword = mb_convert_encoding($s_que['p'] . $s_que['va'], $enco, $s_encode);
             } elseif ($al_f === "msn") {
                 $alword = mb_convert_encoding($s_que['q'], $enco, 'UTF-8, SJIS, EUC-JP, JIS, ASCII');
             } elseif ($al_f === "goo") {
                 $alword = mb_convert_encoding($s_que['MT'], $enco, $s_encode);
             } elseif ($al_f === "infoseek") {
-                $s_encode = ($s_que['enc']) ? $s_que['enc'] : $s_encode;
+                $s_encode = $s_que['enc'] ?: $s_encode;
                 $alword = mb_convert_encoding($s_que['qt'], $enco, $s_encode);
             } elseif ($al_f === "Excite") {
                 $alword = mb_convert_encoding($s_que['search'] . $s_que['s'], $enco, 'SJIS, UTF-8, EUC-JP, JIS, ASCII');
@@ -908,7 +912,7 @@ class NP_Analyze extends NucleusPlugin
             } elseif ($al_f === "ask") {
                 $alword = mb_convert_encoding($s_que['q'] . $s_que['query'], $enco, 'UTF-8');
             } elseif ($al_f === "AlltheWeb") {
-                $s_encode = ($s_que['cs']) ? $s_que['cs'] : $s_encode;
+                $s_encode = $s_que['cs'] ?: $s_encode;
                 $alword = mb_convert_encoding($s_que['q'], $enco, $s_encode);
             } elseif ($al_f === "NAVER") {
                 $alword = mb_convert_encoding($s_que['query'], $enco, $s_encode);
